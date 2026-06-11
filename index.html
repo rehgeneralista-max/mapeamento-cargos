@@ -597,8 +597,262 @@ function doGet(e) {
 <div class="toast" id="toast"></div>
 
 <script>
-// Cache local para evitar chamadas repetidas na mesma sessão
-const cboCache = {};
+// ── BANCO CBO LOCAL — CARGOS DA EMPRESA 2025/2026 ──
+const CBO_LOCAL = {
+  // ── ADMINISTRATIVO / BACKOFFICE ──
+  "411005": { titulo:"Auxiliar Administrativo", descricao:"Executa tarefas administrativas operacionais de suporte às rotinas de escritório, controlando documentos, atendendo solicitações internas e alimentando sistemas de informação.", atribuicoes:["Organizar e arquivar documentos físicos e digitais","Atender telefone e direcionar chamadas internas","Alimentar planilhas e sistemas de controle","Emitir documentos, formulários e relatórios básicos","Apoiar os setores nas rotinas administrativas","Controlar estoque de materiais de escritório"] },
+  "411010": { titulo:"Assistente Administrativo", descricao:"Presta suporte administrativo com maior autonomia, elaborando relatórios, controlando processos e apoiando as áreas de gestão em suas rotinas.", atribuicoes:["Elaborar e enviar correspondências e relatórios","Organizar agendas e reuniões das lideranças","Controlar contratos, documentos e prazos","Realizar cotações e apoiar o setor de compras","Atender clientes e fornecedores internos","Apoiar atividades de RH, financeiro e contábil"] },
+  "252305": { titulo:"Analista Administrativo", descricao:"Analisa processos administrativos, elabora relatórios gerenciais e propõe melhorias de eficiência operacional nas rotinas da empresa.", atribuicoes:["Analisar e otimizar processos administrativos","Elaborar relatórios e indicadores de desempenho","Controlar orçamentos e despesas do setor","Mapear e documentar fluxos de trabalho","Apoiar implementação de melhorias de processos","Dar suporte à tomada de decisão gerencial"] },
+  "141410": { titulo:"Coordenador Administrativo", descricao:"Coordena equipes e processos administrativos, garantindo eficiência operacional, controle de recursos e alinhamento com as diretrizes estratégicas.", atribuicoes:["Coordenar equipes administrativas e distribuir atividades","Controlar orçamentos e despesas do setor","Implementar e monitorar processos e procedimentos","Elaborar relatórios gerenciais para a diretoria","Negociar com fornecedores e prestadores de serviço","Garantir conformidade com normas e políticas internas"] },
+  "142105": { titulo:"Gerente Administrativo", descricao:"Planeja, dirige e controla as atividades administrativas da organização, gerenciando equipes, recursos e processos para garantir eficiência e resultados.", atribuicoes:["Planejar e gerir as rotinas administrativas","Supervisionar equipes e garantir atingimento de metas","Controlar orçamento e indicadores do setor","Implementar melhorias de processos e governança","Representar a área em reuniões estratégicas","Assegurar conformidade legal e regulatória"] },
+  // ── FINANCEIRO ──
+  "411005_fin": { titulo:"Auxiliar Financeiro", descricao:"Apoia as rotinas financeiras com lançamentos, conciliações e controle de documentos fiscais sob supervisão do responsável pela área.", atribuicoes:["Realizar lançamentos financeiros no sistema","Conciliar extratos bancários e contas a pagar/receber","Organizar documentos fiscais e notas fiscais","Controlar contas a pagar e receber","Auxiliar no fechamento financeiro mensal","Emitir boletos e relatórios financeiros básicos"] },
+  "411010_fin": { titulo:"Assistente Financeiro", descricao:"Executa atividades financeiras com autonomia crescente, apoiando o controle do fluxo de caixa e a gestão de contas.", atribuicoes:["Controlar contas a pagar e a receber","Acompanhar o fluxo de caixa diário","Conciliar extratos e realizar baixas financeiras","Elaborar relatórios de inadimplência e cobrança","Apoiar no fechamento financeiro e provisões","Atender fornecedores e clientes em demandas financeiras"] },
+  "252515": { titulo:"Analista Financeiro", descricao:"Analisa indicadores financeiros, controla o fluxo de caixa, elabora relatórios e apoia o planejamento e as decisões financeiras da organização.", atribuicoes:["Analisar e controlar o fluxo de caixa","Elaborar relatórios financeiros e de DRE","Realizar projeções e análises de rentabilidade","Conciliar contas e garantir integridade dos dados","Apoiar o planejamento orçamentário","Propor melhorias nos processos financeiros"] },
+  "121005": { titulo:"Coordenador Financeiro", descricao:"Coordena a gestão financeira da empresa, supervisionando controles, equipes e processos para garantir saúde financeira e conformidade.", atribuicoes:["Supervisionar equipe financeira e distribuir demandas","Controlar fluxo de caixa, contas a pagar e receber","Elaborar relatórios e indicadores financeiros","Acompanhar orçamentos e desvios","Apoiar a gestão de riscos e compliance financeiro","Apresentar resultados à diretoria"] },
+  "121010": { titulo:"Gerente Adm. Financeiro", descricao:"Dirige as áreas administrativas e financeiras, garantindo eficiência operacional, controle orçamentário e alinhamento com a estratégia empresarial.", atribuicoes:["Planejar e controlar orçamento da empresa","Gerir equipes de finanças e administração","Analisar demonstrativos financeiros e indicadores","Definir políticas financeiras e de controle interno","Negociar crédito, financiamentos e seguros","Reportar resultados e projeções à diretoria"] },
+  // ── RH / DP ──
+  "411005_rh": { titulo:"Auxiliar de RH", descricao:"Apoia as rotinas de recursos humanos com atividades de arquivo, cadastro, controle de documentos e atendimento aos colaboradores.", atribuicoes:["Organizar e arquivar documentos de pessoal","Auxiliar no processo de admissão e demissão","Controlar ponto eletrônico e folha de frequência","Atender colaboradores em demandas básicas de RH","Apoiar eventos e comunicações internas","Atualizar cadastros no sistema de RH"] },
+  "411005_dp": { titulo:"Auxiliar de DP", descricao:"Executa rotinas de departamento pessoal, como controle de ponto, apuração de frequência e organização de documentos trabalhistas.", atribuicoes:["Apurar e lançar frequências no sistema","Auxiliar na elaboração da folha de pagamento","Organizar documentos de admissão e demissão","Controlar benefícios e vales dos colaboradores","Emitir guias de tributos trabalhistas","Atender colaboradores em dúvidas sobre DP"] },
+  "411010_rh": { titulo:"Assistente de RH", descricao:"Executa processos de RH com maior responsabilidade, apoiando recrutamento, treinamento, benefícios e comunicação interna.", atribuicoes:["Conduzir triagem e entrevistas iniciais de R&S","Organizar programas de integração de novos colaboradores","Controlar indicadores básicos de RH","Apoiar ações de T&D e eventos corporativos","Administrar benefícios e solicitações dos colaboradores","Elaborar comunicados e relatórios de RH"] },
+  "411010_dp": { titulo:"Assistente de DP", descricao:"Apoia as rotinas de folha de pagamento, encargos trabalhistas e manutenção de registros de pessoal com precisão e cumprimento de prazos.", atribuicoes:["Processar admissões, demissões e rescisões","Lançar e revisar informações da folha de pagamento","Calcular férias, 13º salário e verbas rescisórias","Controlar e lançar benefícios e descontos","Emitir eSocial e obrigações acessórias","Atender auditorias e fiscalizações trabalhistas"] },
+  "252405": { titulo:"Analista de RH Generalista", descricao:"Planeja e executa políticas e processos de gestão de pessoas, abrangendo recrutamento, T&D, remuneração, clima e relações trabalhistas.", atribuicoes:["Conduzir processos completos de R&S","Implementar programas de T&D e avaliação","Administrar benefícios e remuneração","Elaborar indicadores e relatórios de RH","Apoiar gestores em temas de gestão de pessoas","Garantir conformidade com legislação trabalhista"] },
+  "252405_dp": { titulo:"Analista de DP", descricao:"Gerencia as rotinas de departamento pessoal com autonomia, garantindo a correta apuração da folha e cumprimento das obrigações trabalhistas.", atribuicoes:["Elaborar e conferir folha de pagamento","Calcular e processar rescisões e férias","Enviar obrigações acessórias (eSocial, SEFIP, RAIS)","Gerenciar contratos de trabalho e documentos de pessoal","Orientar gestores e colaboradores em questões trabalhistas","Auditar e garantir conformidade legal do DP"] },
+  "142305": { titulo:"Coordenador de RH/DP", descricao:"Coordena as atividades de recursos humanos e departamento pessoal, liderando equipes e garantindo a entrega dos processos com qualidade e conformidade.", atribuicoes:["Supervisionar equipe de RH e DP","Garantir conformidade dos processos trabalhistas","Coordenar recrutamento, T&D e avaliações","Elaborar relatórios e indicadores da área","Apoiar a diretoria em decisões de pessoas","Implementar melhorias nos processos de RH/DP"] },
+  "142310": { titulo:"Gerente de RH/DP", descricao:"Dirige as políticas e estratégias de gestão de pessoas e departamento pessoal, alinhando as práticas de RH aos objetivos organizacionais.", atribuicoes:["Definir e implementar políticas de gestão de pessoas","Liderar equipes de RH e DP","Planejar quadro de pessoal e orçamento da área","Gerenciar relações sindicais e negociações coletivas","Desenvolver cultura e clima organizacional","Reportar indicadores de RH à diretoria"] },
+  // ── CONTABILIDADE ──
+  "422105": { titulo:"Auxiliar Contábil", descricao:"Realiza lançamentos e conciliações contábeis básicas, organiza documentos fiscais e apoia o fechamento contábil sob supervisão.", atribuicoes:["Realizar lançamentos contábeis no sistema","Conciliar contas bancárias e balancetes","Organizar notas fiscais e documentos contábeis","Auxiliar na apuração de impostos","Emitir relatórios contábeis básicos","Apoiar no fechamento contábil mensal"] },
+  "413110": { titulo:"Assistente Contábil", descricao:"Executa rotinas contábeis com autonomia crescente, participando do fechamento, apuração fiscal e elaboração de demonstrações.", atribuicoes:["Lançar e conciliar contas do plano contábil","Apurar impostos e obrigações fiscais","Auxiliar na elaboração de balanço e DRE","Emitir e conferir obrigações acessórias","Controlar depreciações e provisões","Apoiar auditorias internas e externas"] },
+  "252210": { titulo:"Analista Contábil", descricao:"Executa e supervisiona rotinas contábeis, fiscais e tributárias, garantindo a conformidade das demonstrações e o cumprimento das obrigações legais.", atribuicoes:["Elaborar balanço patrimonial e demonstrações financeiras","Apurar e analisar impostos e obrigações fiscais","Entregar obrigações acessórias (SPED, ECF, ECD)","Realizar análise de contas e conciliações","Orientar sobre planejamento tributário","Apoiar auditorias e due diligences"] },
+  "121105": { titulo:"Coordenador Contábil", descricao:"Coordena a equipe e os processos contábeis da empresa, garantindo a precisão das informações e conformidade com normas e legislação vigentes.", atribuicoes:["Supervisionar equipe contábil e fiscalizar lançamentos","Garantir entrega tempestiva das obrigações legais","Coordenar fechamento contábil mensal e anual","Analisar demonstrações financeiras e indicadores","Implementar melhorias de processos contábeis","Apoiar auditorias externas e fiscais"] },
+  "121110": { titulo:"Gerente Contábil", descricao:"Dirige as operações contábeis, fiscais e tributárias da organização, sendo responsável pela integridade das informações e pela estratégia tributária.", atribuicoes:["Planejar e supervisionar todas as rotinas contábeis","Definir estratégias tributárias e de compliance","Apresentar demonstrações à diretoria e auditores","Gerenciar equipe contábil e fiscal","Relacionar-se com auditores, sócios e órgãos reguladores","Garantir conformidade com normas contábeis e fiscais"] },
+  // ── COMPRAS ──
+  "411005_cmp": { titulo:"Auxiliar de Compras", descricao:"Apoia as rotinas do setor de compras com cotações, controle de pedidos e organização de documentos de fornecedores.", atribuicoes:["Realizar cotações com fornecedores","Controlar pedidos e prazos de entrega","Organizar documentos de fornecedores e contratos","Alimentar sistemas de compras","Apoiar no controle de estoque e abastecimento","Emitir relatórios básicos de compras"] },
+  "411010_cmp": { titulo:"Assistente de Compras", descricao:"Executa processos de compras com autonomia, negociando com fornecedores e garantindo abastecimento conforme necessidades da empresa.", atribuicoes:["Negociar preços e condições com fornecedores","Emitir e acompanhar pedidos de compras","Avaliar e homologar fornecedores","Controlar cronograma de entregas e pendências","Elaborar relatórios de desempenho de fornecedores","Apoiar o planejamento de necessidades de compra"] },
+  "252705": { titulo:"Analista de Compras", descricao:"Analisa demandas de compras, desenvolve fornecedores e implementa estratégias para redução de custos e melhoria do processo de suprimentos.", atribuicoes:["Analisar e consolidar requisições de compras","Desenvolver e avaliar base de fornecedores","Negociar contratos e acordos comerciais","Elaborar indicadores de compras e savings","Implementar processos de compras estratégicas","Garantir conformidade nas aquisições"] },
+  "141205": { titulo:"Coordenador de Compras", descricao:"Coordena a equipe e os processos de compras, garantindo eficiência, redução de custos e conformidade nos processos de aquisição.", atribuicoes:["Supervisionar equipe e processos de compras","Planejar compras estratégicas e táticas","Negociar contratos de alto valor","Implementar política de homologação de fornecedores","Controlar orçamento e indicadores de compras","Reportar resultados à gerência"] },
+  "141210": { titulo:"Gerente de Compras", descricao:"Dirige a área de suprimentos e compras estratégicas, desenvolvendo fornecedores, gerenciando custos e alinhando as aquisições com a estratégia da empresa.", atribuicoes:["Definir estratégias de suprimento e aquisição","Liderar negociações de alto impacto","Gerenciar base de fornecedores estratégicos","Controlar orçamento e metas da área","Alinhar compras com operações e finanças","Reportar indicadores e resultados à diretoria"] },
+  // ── JURÍDICO / COMERCIAL ──
+  "241205": { titulo:"Analista Jurídico", descricao:"Analisa e elabora documentos jurídicos, acompanha processos e assessora a empresa em questões legais e contratuais.", atribuicoes:["Analisar e elaborar contratos e documentos jurídicos","Acompanhar processos judiciais e administrativos","Pesquisar legislação e jurisprudência","Emitir pareceres e notas jurídicas","Apoiar negociações e resolução de conflitos","Garantir conformidade legal das operações"] },
+  "141305": { titulo:"Coordenador Jurídico", descricao:"Coordena as atividades jurídicas da empresa, gerenciando contratos, processos e garantindo conformidade legal em todas as áreas.", atribuicoes:["Supervisionar contratos e documentos legais","Coordenar acompanhamento de processos judiciais","Orientar as áreas sobre questões legais","Gerenciar relacionamento com escritórios externos","Elaborar políticas de compliance","Reportar riscos jurídicos à diretoria"] },
+  "141310": { titulo:"Gerente Jurídico", descricao:"Dirige o departamento jurídico, definindo estratégia legal, gerenciando riscos e garantindo conformidade regulatória da organização.", atribuicoes:["Definir estratégia jurídica da empresa","Gerenciar equipe jurídica interna e externa","Representar a empresa em negociações complexas","Garantir compliance e gestão de riscos legais","Aprovar contratos e documentos de alto impacto","Reportar à diretoria sobre riscos e litígios"] },
+  "252605": { titulo:"Analista Comercial", descricao:"Analisa dados de vendas, desenvolve estratégias comerciais e apoia a equipe de vendas com informações e processos.", atribuicoes:["Analisar indicadores e resultados de vendas","Elaborar relatórios e dashboards comerciais","Apoiar no planejamento de metas e estratégias","Controlar CRM e pipeline de oportunidades","Identificar tendências de mercado","Apoiar a equipe de vendas com dados e processos"] },
+  "142330": { titulo:"Analista de Licitação", descricao:"Identifica oportunidades, prepara e acompanha processos licitatórios, garantindo conformidade com a legislação e maximizando chances de sucesso.", atribuicoes:["Pesquisar e monitorar editais de licitação","Elaborar propostas técnicas e comerciais","Analisar documentação exigida em editais","Acompanhar julgamentos e recursos","Controlar prazos e documentação de habilitação","Manter cadastros e certidões atualizados"] },
+  "252405_com": { titulo:"Assistente Comercial", descricao:"Apoia as atividades comerciais com atendimento a clientes, controle de pedidos e suporte à equipe de vendas.", atribuicoes:["Atender clientes e registrar pedidos","Apoiar vendedores com propostas e cotações","Controlar carteira de pedidos e prazos","Emitir relatórios de vendas e clientes","Manter CRM atualizado com informações de clientes","Apoiar ações de pós-venda e fidelização"] },
+  // ── SECRETARIA ──
+  "422205_sec": { titulo:"Secretário(a)", descricao:"Presta suporte executivo de alto nível à diretoria, gerenciando agenda, comunicações e processos administrativos estratégicos.", atribuicoes:["Gerenciar agenda e compromissos da diretoria","Organizar viagens, eventos e reuniões executivas","Redigir correspondências e comunicações formais","Receber e encaminhar visitantes e contatos externos","Controlar documentos e informações confidenciais","Apoiar projetos estratégicos da diretoria"] },
+  // ── OPERACIONAL / GRÁFICA ──
+  "766315": { titulo:"Auxiliar de Acabamento", descricao:"Executa operações de acabamento gráfico como dobrar, cortar, colar e embalar materiais impressos, garantindo a qualidade visual dos produtos.", atribuicoes:["Realizar operações manuais de dobra e corte","Embalar e organizar materiais impressos","Verificar qualidade visual dos produtos","Operar guilhotinas e dobradeiras sob supervisão","Separar e conferir materiais por pedido","Manter área de trabalho organizada e limpa"] },
+  "766215": { titulo:"Impressor de Offset", descricao:"Opera impressoras offset para produção de materiais gráficos, ajustando parâmetros de impressão e garantindo qualidade colorimétrica.", atribuicoes:["Preparar e operar máquinas de impressão offset","Ajustar registro de cores e parâmetros de impressão","Realizar prova de impressão e aprovação de cor","Controlar qualidade da impressão durante a produção","Realizar manutenção básica dos equipamentos","Registrar dados de produção e consumo"] },
+  "766215_an": { titulo:"Analista de Offset", descricao:"Supervisiona e otimiza processos de impressão offset, garantindo padrão de qualidade, eficiência produtiva e resolução de problemas técnicos.", atribuicoes:["Supervisionar operação de máquinas de impressão","Otimizar parâmetros de cor e registro","Analisar e resolver falhas técnicas de impressão","Controlar consumo de insumos e custos","Treinar operadores e auxiliares","Elaborar relatórios de produção e qualidade"] },
+  "766315_an": { titulo:"Analista de Acabamento", descricao:"Coordena e otimiza operações de acabamento gráfico, garantindo qualidade, prazo e eficiência no processamento dos materiais impressos.", atribuicoes:["Planejar e distribuir atividades de acabamento","Controlar qualidade dos produtos acabados","Operar equipamentos de acabamento complexos","Resolver problemas técnicos de acabamento","Elaborar relatórios de produção e perdas","Treinar equipe de auxiliares"] },
+  "766315_sup": { titulo:"Supervisor de Acabamento", descricao:"Gerencia a equipe e os processos de acabamento gráfico, assegurando cumprimento de prazos, qualidade e eficiência operacional.", atribuicoes:["Planejar e gerenciar a produção de acabamento","Supervisionar equipe e distribuir demandas","Garantir qualidade e conformidade dos produtos","Controlar custos e indicadores de produção","Implementar melhorias de processo","Reportar resultados à gerência"] },
+  "766215_sup": { titulo:"Supervisor de Gráfica Offset", descricao:"Gerencia as operações de impressão offset, liderando equipes técnicas e garantindo padrão de qualidade e volume de produção.", atribuicoes:["Supervisionar operação de impressão offset","Planejar e sequenciar a produção","Garantir padrão colorimétrico e de qualidade","Controlar consumo de papel, tinta e insumos","Gerenciar equipe técnica de impressão","Reportar indicadores à gerência"] },
+  // ── LIMPEZA ──
+  "514320": { titulo:"Faxineiro / ASG", descricao:"Realiza limpeza e conservação de ambientes, garantindo higiene e organização das instalações conforme rotina estabelecida.", atribuicoes:["Higienizar pisos, paredes e sanitários","Limpar e organizar móveis e superfícies","Recolher e descartar resíduos adequadamente","Lavar e conservar áreas externas","Repor materiais de higiene nos banheiros","Zelar pelos equipamentos e materiais de limpeza"] },
+  "514325": { titulo:"Encarregado de Limpeza", descricao:"Coordena equipe de limpeza e conservação, organizando escalas, controlando insumos e garantindo padrão de higiene nas instalações.", atribuicoes:["Coordenar e supervisionar equipe de limpeza","Planejar escalas e distribuir tarefas","Controlar estoque de produtos de limpeza","Garantir padrão de higiene e qualidade","Treinar novos colaboradores da equipe","Reportar ocorrências ao gestor responsável"] },
+  "514330": { titulo:"Líder de Limpeza", descricao:"Lidera operações de limpeza em múltiplos ambientes, gerenciando equipes maiores e garantindo conformidade com normas de higiene e segurança.", atribuicoes:["Liderar equipes de limpeza e conservação","Planejar operações e escalar profissionais","Controlar qualidade e conformidade dos serviços","Gerenciar insumos e controlar custos","Implementar procedimentos de higienização","Reportar resultados e indicadores ao gestor"] },
+  // ── OBRAS / MANUTENÇÃO ──
+  "710105": { titulo:"Ajudante de Obra / Servente", descricao:"Executa atividades auxiliares em obras de construção civil, apoiando os profissionais qualificados na execução de serviços básicos.", atribuicoes:["Auxiliar pedreiros, carpinteiros e eletricistas","Preparar argamassa, concreto e materiais","Carregar e organizar materiais no canteiro","Realizar serviços de limpeza da obra","Operar ferramentas manuais sob supervisão","Seguir normas de segurança e usar EPIs"] },
+  "710210": { titulo:"Pedreiro", descricao:"Executa serviços de alvenaria, reboco e assentamento em obras de construção civil, conforme projetos e especificações técnicas.", atribuicoes:["Assentar tijolos e blocos em alvenaria","Aplicar reboco e massa em paredes","Executar serviços de contrapiso e regularização","Interpretar plantas e especificações técnicas","Zelar pela qualidade e prumo das estruturas","Cumprir normas de segurança na execução"] },
+  "715505": { titulo:"Eletricista", descricao:"Instala, mantém e repara sistemas elétricos em obras e instalações prediais, seguindo normas técnicas de segurança.", atribuicoes:["Instalar quadros elétricos e circuitos","Passar eletrodutos e cabear instalações","Realizar manutenção elétrica preventiva e corretiva","Testar e verificar sistemas elétricos instalados","Interpretar projetos elétricos","Seguir NR-10 e normas de segurança elétrica"] },
+  "716610": { titulo:"Bombeiro Hidráulico", descricao:"Instala e mantém sistemas hidráulicos prediais, incluindo tubulações, registros e equipamentos sanitários.", atribuicoes:["Instalar tubulações e conexões hidráulicas","Executar instalações de água fria e quente","Realizar manutenção de sistemas hidráulicos","Solucionar vazamentos e avarias","Interpretar projetos hidráulicos","Cumprir normas técnicas e de segurança"] },
+  "716505": { titulo:"Carpinteiro", descricao:"Executa serviços de carpintaria em obras, fabricando e instalando estruturas de madeira conforme projetos e especificações.", atribuicoes:["Executar formas de concreto e estruturas de madeira","Instalar esquadrias, portas e janelas","Fabricar e montar estruturas de telhado","Realizar acabamentos em madeira","Interpretar projetos e especificações técnicas","Operar ferramentas e máquinas de carpintaria"] },
+  "712120": { titulo:"Pintor", descricao:"Executa serviços de pintura em obras e edificações, preparando superfícies e aplicando tinta conforme especificações técnicas e estéticas.", atribuicoes:["Preparar e lixar superfícies para pintura","Aplicar massa corrida, primer e tinta","Executar pinturas internas e externas","Realizar acabamentos especiais e texturas","Controlar consumo de materiais","Cumprir normas de segurança e usar EPIs"] },
+  "715110": { titulo:"Duteiro", descricao:"Instala e mantém sistemas de dutagem para ar-condicionado, ventilação e exaustão em obras e instalações prediais.", atribuicoes:["Instalar dutos de ar-condicionado e ventilação","Executar corte e montagem de chapas","Realizar vedação e isolamento de dutos","Testar e ajustar sistemas de dutagem","Interpretar projetos de climatização","Cumprir normas técnicas e de segurança"] },
+  "711110": { titulo:"Armador", descricao:"Executa serviços de armação de ferragem em obras de construção civil, confeccionando e montando estruturas metálicas conforme projetos.", atribuicoes:["Cortar, dobrar e montar ferros para armação","Montar estruturas de aço conforme projetos","Realizar amarração e espaçamento de armaduras","Conferir bitolas e especificações técnicas","Colaborar com equipes de concretagem","Cumprir normas de segurança na execução"] },
+  "514310": { titulo:"Auxiliar de Manutenção Predial", descricao:"Realiza serviços gerais de manutenção preventiva e corretiva em instalações prediais, atendendo solicitações dos setores.", atribuicoes:["Executar reparos básicos elétricos e hidráulicos","Realizar pinturas e pequenos serviços de alvenaria","Manter jardins e áreas externas","Instalar e reparar mobiliários e equipamentos","Registrar e reportar ocorrências de manutenção","Cumprir normas de segurança nos serviços"] },
+  "620105": { titulo:"Encarregado de Manutenção", descricao:"Coordena a equipe de manutenção predial, planejando serviços, controlando insumos e garantindo a conservação das instalações.", atribuicoes:["Coordenar equipe de manutenção predial","Planejar e priorizar ordens de serviço","Controlar materiais e ferramentas","Garantir qualidade dos serviços executados","Elaborar relatórios de manutenção","Assegurar cumprimento das normas de segurança"] },
+  "620110": { titulo:"Encarregado de Instalação", descricao:"Coordena equipes de instalação elétrica, hidráulica e de dutagem, garantindo execução conforme projetos e normas técnicas.", atribuicoes:["Coordenar equipes de instalações prediais","Interpretar e distribuir projetos técnicos","Controlar qualidade e conformidade da execução","Gerenciar materiais e cronograma","Garantir cumprimento de normas técnicas","Reportar andamento das obras ao supervisor"] },
+  "620115": { titulo:"Encarregado de Obras", descricao:"Gerencia equipes e frentes de obra, coordenando a execução conforme cronograma, qualidade e normas de segurança.", atribuicoes:["Coordenar múltiplas equipes no canteiro","Controlar cronograma e produtividade","Garantir qualidade de execução conforme projeto","Gerenciar materiais e equipamentos de obra","Elaborar relatórios de andamento","Assegurar cumprimento das normas de SST"] },
+  "620120": { titulo:"Encarregado de Armação", descricao:"Supervisiona equipes de armação de ferragem, controlando execução, qualidade e consumo de materiais metálicos.", atribuicoes:["Supervisionar equipe de armadores","Distribuir atividades e controlar produtividade","Garantir qualidade das armações executadas","Controlar estoque e consumo de ferragem","Interpretar projetos estruturais","Cumprir e exigir normas de segurança"] },
+  "620125": { titulo:"Contramestre", descricao:"Auxilia o mestre de obras na coordenação geral do canteiro, supervisionando múltiplas equipes e frentes de trabalho.", atribuicoes:["Auxiliar o mestre de obras na coordenação","Supervisionar equipes e frentes de trabalho","Controlar produtividade e qualidade","Organizar entrada e saída de materiais","Registrar ocorrências e relatórios diários","Garantir cumprimento das normas de segurança"] },
+  "710205": { titulo:"Mestre de Obras", descricao:"Dirige a execução geral da obra, coordenando todas as equipes e frentes de trabalho, garantindo prazo, qualidade, segurança e conformidade técnica.", atribuicoes:["Dirigir e coordenar todas as equipes da obra","Planejar sequências e cronogramas de execução","Garantir qualidade e conformidade técnica","Gerenciar materiais, equipamentos e terceiros","Elaborar relatórios de avanço físico","Assegurar cumprimento das normas de SST"] },
+  "621005": { titulo:"Almoxarife", descricao:"Controla a entrada, saída e estoque de materiais em obras ou almoxarifados, garantindo organização e rastreabilidade dos itens.", atribuicoes:["Receber e conferir materiais e notas fiscais","Organizar e endereçar itens no estoque","Controlar saídas com requisições","Realizar inventário periódico","Elaborar relatórios de movimentação","Reportar divergências e avarias ao supervisor"] },
+  "621010": { titulo:"Supervisor de Almoxarife", descricao:"Supervisiona o controle de materiais e estoque em obras, gerenciando equipe e processos de almoxarifado para garantir eficiência e rastreabilidade.", atribuicoes:["Supervisionar equipe e rotinas do almoxarifado","Controlar e otimizar nível de estoque","Garantir rastreabilidade de materiais","Negociar devoluções e ajustar inventários","Elaborar relatórios e indicadores de estoque","Implementar melhorias no processo de almoxarifado"] },
+  "712210": { titulo:"Apontador", descricao:"Registra a frequência, produtividade e ocorrências dos colaboradores em canteiros de obra, apoiando a gestão de pessoas no campo.", atribuicoes:["Registrar ponto e frequência dos colaboradores","Lançar dados de produtividade por equipe","Controlar afastamentos e substituições","Apoiar o DP com informações do canteiro","Elaborar relatórios diários de mão de obra","Comunicar ocorrências ao encarregado e ao RH"] },
+  "710305": { titulo:"Vigia", descricao:"Realiza a vigilância de instalações, controlando acesso e garantindo segurança do patrimônio e dos colaboradores.", atribuicoes:["Controlar acesso de pessoas e veículos","Realizar rondas periódicas na área","Registrar ocorrências no livro de controle","Acionar responsáveis em situações de emergência","Verificar identificação de visitantes","Zelar pela segurança das instalações"] },
+  // ── TÉCNICO ──
+  "322205": { titulo:"Técnico de Segurança do Trabalho", descricao:"Promove saúde e segurança no trabalho, identificando riscos, elaborando documentos legais e treinando equipes.", atribuicoes:["Identificar e avaliar riscos nos ambientes","Elaborar PGR, PCMSO e documentos de SST","Treinar colaboradores em normas de segurança","Investigar acidentes e propor melhorias","Garantir uso correto de EPIs","Relacionar-se com fiscalização do trabalho"] },
+  "314120": { titulo:"Assessor Técnico", descricao:"Presta assessoria técnica especializada em produtos, processos ou projetos, apoiando equipes comerciais e clientes com conhecimento técnico aprofundado.", atribuicoes:["Assessorar clientes e equipes em questões técnicas","Elaborar especificações e laudos técnicos","Apoiar apresentações e demonstrações de produtos","Analisar problemas técnicos e propor soluções","Elaborar relatórios e documentação técnica","Participar de visitas e reuniões com clientes"] },
+  "313110": { titulo:"Técnico em Eletrotécnica", descricao:"Instala, mantém e opera sistemas elétricos industriais e prediais, garantindo funcionamento seguro e eficiente.", atribuicoes:["Instalar e manter sistemas elétricos industriais","Realizar manutenção preventiva e corretiva","Testar e calibrar equipamentos elétricos","Elaborar laudos e relatórios técnicos","Interpretar projetos e diagramas elétricos","Cumprir NR-10 e normas de segurança"] },
+  "311010": { titulo:"Técnico em Edificações", descricao:"Auxilia na elaboração e execução de projetos de obras civis, realizando levantamentos, orçamentos e acompanhamento de execução.", atribuicoes:["Elaborar e interpretar projetos de edificações","Acompanhar execução de obras conforme projetos","Realizar medições e levantamentos quantitativos","Elaborar orçamentos e memoriais descritivos","Apoiar engenheiros e arquitetos nos projetos","Controlar qualidade de materiais e execução"] },
+  "314105": { titulo:"Técnico de Qualidade", descricao:"Implementa e monitora processos de controle de qualidade, garantindo conformidade dos produtos e serviços com especificações técnicas.", atribuicoes:["Inspecionar produtos e processos de produção","Realizar testes e ensaios de controle de qualidade","Elaborar relatórios de não conformidade","Propor ações corretivas e preventivas","Implementar ferramentas de gestão da qualidade","Treinar equipes em procedimentos de qualidade"] },
+  // ── LABORATÓRIO / BIOMÉDICO ──
+  "221205": { titulo:"Biomédico(a)", descricao:"Realiza análises clínicas, pesquisas e assessoria técnico-científica em laboratórios, instituições de saúde e empresas do setor médico-hospitalar.", atribuicoes:["Realizar análises clínicas e laboratoriais","Elaborar laudos técnicos e relatórios científicos","Assessorar em produtos e equipamentos médico-hospitalares","Desenvolver e validar métodos analíticos","Garantir controle de qualidade analítico","Treinar e orientar equipes técnicas de laboratório"] },
+  "324205": { titulo:"Técnico em Laboratório", descricao:"Executa procedimentos laboratoriais sob supervisão técnica, realizando análises, preparando amostras e mantendo equipamentos.", atribuicoes:["Preparar e analisar amostras conforme protocolos","Operar equipamentos e instrumentos laboratoriais","Realizar controle de qualidade das análises","Registrar resultados e elaborar relatórios","Manter laboratório organizado e em conformidade","Zelar pela biossegurança e manutenção dos equipamentos"] },
+  "131205": { titulo:"Assessor Científico / Supervisor Técnico e Científico", descricao:"Presta consultoria científica e técnica especializada, apoiando equipes comerciais e clientes com conhecimento aprofundado em produtos e aplicações.", atribuicoes:["Assessorar clientes em aplicações científicas e técnicas","Elaborar laudos, apresentações e treinamentos técnicos","Apoiar processos de registro e certificação","Desenvolver parceiras com instituições científicas","Acompanhar tendências e inovações do setor","Participar de congressos e eventos científicos"] },
+  // ── ENGENHARIA ──
+  "214105": { titulo:"Arquiteto Júnior", descricao:"Elabora e desenvolve projetos arquitetônicos sob supervisão, aplicando conceitos técnicos e criativos na concepção de edificações.", atribuicoes:["Elaborar projetos arquitetônicos e complementares","Desenvolver plantas, cortes e detalhamentos","Acompanhar execução conforme projetos","Realizar vistorias técnicas em obras","Elaborar memoriais descritivos e especificações","Apoiar clientes e equipes técnicas"] },
+  "214110": { titulo:"Engenheiro Júnior", descricao:"Desenvolve atividades de engenharia sob supervisão, aplicando conhecimentos técnicos em projetos e obras.", atribuicoes:["Elaborar projetos técnicos de engenharia","Acompanhar execução de obras e instalações","Realizar inspeções e ensaios técnicos","Elaborar memoriais e especificações técnicas","Apoiar gestão de contratos técnicos","Garantir conformidade com normas técnicas"] },
+  "214115": { titulo:"Engenheiro Pleno", descricao:"Planeja e gerencia projetos e obras com autonomia, assumindo responsabilidade técnica pelas entregas.", atribuicoes:["Gerenciar projetos e obras de média complexidade","Elaborar e revisar projetos técnicos","Coordenar equipes técnicas e subcontratados","Controlar prazos, custos e qualidade","Emitir ARTs e assumir responsabilidade técnica","Relacionar-se com clientes e órgãos reguladores"] },
+  "214120": { titulo:"Engenheiro Sênior", descricao:"Lidera projetos e obras complexas, assumindo responsabilidade técnica integral e orientando equipes menos experientes.", atribuicoes:["Liderar projetos e obras de alta complexidade","Definir soluções técnicas inovadoras","Orientar e desenvolver equipes técnicas","Gerir múltiplos contratos e clientes","Garantir conformidade técnica e legal","Reportar resultados à diretoria e clientes"] },
+  "214125": { titulo:"Engenheiro Master", descricao:"Dirige a área técnica de engenharia, definindo estratégias, desenvolvendo negócios e garantindo excelência técnica em todos os projetos.", atribuicoes:["Definir estratégias técnicas e de negócio","Liderar equipes sênior de engenharia","Desenvolver e fidelizar clientes estratégicos","Garantir excelência técnica e inovação","Representar a empresa em fóruns técnicos","Reportar resultados e tendências à diretoria"] },
+  "214130": { titulo:"Assistente Técnico de Arquitetura", descricao:"Apoia arquitetos na elaboração de projetos, desenvolvendo desenhos técnicos, maquetes e documentação de projetos arquitetônicos.", atribuicoes:["Elaborar plantas e desenhos técnicos de arquitetura","Desenvolver detalhamentos e especificações","Realizar maquetes físicas e digitais","Organizar documentação de projetos","Apoiar em visitas técnicas e vistorias","Auxiliar na compatibilização de projetos"] },
+  "214135": { titulo:"Assistente de Engenharia", descricao:"Apoia engenheiros na elaboração de projetos e acompanhamento de obras, realizando levantamentos, cálculos e documentação técnica.", atribuicoes:["Auxiliar na elaboração de projetos técnicos","Realizar levantamentos de campo e quantitativos","Elaborar orçamentos e planilhas técnicas","Acompanhar obras e registrar progresso","Organizar documentação técnica do projeto","Apoiar na relação com clientes e fornecedores"] },
+  // ── DIRETORIA ──
+  "123105": { titulo:"Diretor Administrativo / Executivo", descricao:"Dirige as operações estratégicas e administrativas da organização, garantindo eficiência, crescimento e conformidade com os objetivos dos sócios.", atribuicoes:["Definir estratégias e diretrizes organizacionais","Coordenar diretores e gerentes das áreas","Garantir atingimento das metas empresariais","Representar a empresa perante sócios e stakeholders","Tomar decisões de alto impacto estratégico","Assegurar saúde financeira e operacional da empresa"] },
+  "141105": { titulo:"Diretor Executivo", descricao:"Dirige a empresa em sua totalidade, definindo visão, estratégia e cultura organizacional, sendo responsável pelos resultados globais.", atribuicoes:["Definir visão, missão e estratégia da empresa","Coordenar toda a liderança executiva","Representar a empresa externamente","Garantir crescimento sustentável do negócio","Tomar decisões de investimento e expansão","Responder aos sócios e conselho pelos resultados"] },
+  // ── OUTROS ──
+  "513205": { titulo:"Cozinheiro(a)", descricao:"Prepara refeições e alimentos conforme cardápios e normas de higiene e segurança alimentar.", atribuicoes:["Preparar refeições conforme cardápio planejado","Controlar qualidade e validade dos alimentos","Garantir higiene e limpeza da cozinha","Controlar estoque de ingredientes","Cumprir normas de vigilância sanitária","Planejar e sugerir cardápios"] },
+  "513505": { titulo:"Auxiliar de Cozinha", descricao:"Apoia o cozinheiro nas atividades de preparo de alimentos, higienização de utensílios e organização da cozinha.", atribuicoes:["Auxiliar no preparo de alimentos","Higienizar utensílios e equipamentos","Organizar e armazenar ingredientes","Realizar pré-preparo de alimentos","Manter a cozinha limpa e organizada","Cumprir normas de higiene e segurança alimentar"] },
+  "414105": { titulo:"Estoquista", descricao:"Controla a movimentação de mercadorias no estoque, garantindo organização, rastreabilidade e acuracidade dos inventários.", atribuicoes:["Receber, conferir e armazenar mercadorias","Controlar entradas e saídas no sistema","Realizar inventários e contagens de estoque","Separar pedidos para expedição","Organizar layout e endereçamento do estoque","Reportar divergências e avarias ao supervisor"] },
+  "212320": { titulo:"Administrador em Segurança da Informação", descricao:"Gerencia políticas, sistemas e infraestrutura de segurança da informação, protegendo dados e sistemas contra ameaças.", atribuicoes:["Implementar e gerenciar políticas de segurança da informação","Monitorar sistemas e detectar vulnerabilidades","Responder a incidentes de segurança","Realizar auditorias de conformidade e riscos","Treinar colaboradores em boas práticas de segurança","Garantir conformidade com LGPD e normas aplicáveis"] },
+};
+
+function buscarCBOLocal(cargo) {
+  const c = cargo.toUpperCase().trim().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+
+  const mapa = [
+    // ADMINISTRATIVO
+    [["AUXILIAR ADMINISTRATIVO","AUXILIAR ADMIN","AUX ADMIN","AUX. ADMIN"],                         "411005"],
+    [["ASSISTENTE ADMINISTRATIVO","ASSISTENTE ADMIN","ASSIST ADMIN"],                                "411010"],
+    [["ANALISTA ADMINISTRATIVO","ANALISTA ADMIN"],                                                   "252305"],
+    [["COORDENADOR ADMINISTRATIVO","COORD ADMIN"],                                                   "141410"],
+    [["GERENTE ADMINISTRATIVO","GERENTE ADMIN"],                                                     "142105"],
+    // FINANCEIRO
+    [["AUXILIAR FINANCEIRO","AUX FINANCEIRO","AUX. FINANCEIRO"],                                    "411005_fin"],
+    [["ASSISTENTE FINANCEIRO","ASSIST FINANCEIRO"],                                                  "411010_fin"],
+    [["ANALISTA FINANCEIRO","ANALISTA DE FINANCAS","ANALISTA FINANC"],                              "252515"],
+    [["COORDENADOR FINANCEIRO","COORD FINANCEIRO"],                                                  "121005"],
+    [["GERENTE FINANCEIRO","GERENTE ADM. FINANCEIRO","GERENTE ADM FINANCEIRO"],                     "121010"],
+    // RH
+    [["AUXILIAR DE RH","AUXILIAR RH","AUX RH","AUX. RH"],                                          "411005_rh"],
+    [["AUXILIAR DE DP","AUXILIAR DP","AUX DP","AUX. DP"],                                          "411005_dp"],
+    [["ASSISTENTE DE RH","ASSISTENTE RH"],                                                          "411010_rh"],
+    [["ASSISTENTE DE DP","ASSISTENTE DP"],                                                          "411010_dp"],
+    [["ANALISTA DE RH","ANALISTA RH","ANALISTA DE RECURSOS HUMANOS","GENERALISTA RH"],             "252405"],
+    [["ANALISTA DE DP","ANALISTA DP"],                                                              "252405_dp"],
+    [["COORDENADOR DE RH","COORD RH","COORDENADOR RH/DP","COORD RH/DP"],                           "142305"],
+    [["GERENTE DE RH","GERENTE RH","GERENTE RH/DP"],                                               "142310"],
+    // CONTABILIDADE
+    [["AUXILIAR CONTABIL","AUXILIAR CONTABEIS","AUX CONTABIL"],                                    "422105"],
+    [["ASSISTENTE CONTABIL","ASSIST CONTABIL","ASSISTENTE CONTABEIS"],                             "413110"],
+    [["ANALISTA CONTABIL","ANALISTA CONTABEIS","CONTADORA","CONTADOR"],                            "252210"],
+    [["COORDENADOR CONTABIL","COORD CONTABIL"],                                                    "121105"],
+    [["GERENTE CONTABIL","GERENTE DE CONTABILIDADE"],                                              "121110"],
+    // COMPRAS
+    [["AUXILIAR DE COMPRAS","AUX COMPRAS","AUXILIAR COMPRAS"],                                     "411005_cmp"],
+    [["ASSISTENTE DE COMPRAS","ASSIST COMPRAS","ASSISTENTE COMPRAS"],                              "411010_cmp"],
+    [["ANALISTA DE COMPRAS","ANALISTA COMPRAS"],                                                   "252705"],
+    [["COORDENADOR DE COMPRAS","COORD COMPRAS"],                                                   "141205"],
+    [["GERENTE DE COMPRAS","GERENTE COMPRAS"],                                                     "141210"],
+    // JURÍDICO/COMERCIAL
+    [["ANALISTA JURIDICO","ANALISTA JURIDICOS","JURIDICO"],                                        "241205"],
+    [["COORDENADOR JURIDICO","COORD JURIDICO"],                                                    "141305"],
+    [["GERENTE JURIDICO","GERENTE DE JURIDICO"],                                                   "141310"],
+    [["ANALISTA COMERCIAL","ANALISTA DE COMERCIO"],                                                "252605"],
+    [["ASSISTENTE COMERCIAL","ASSIST COMERCIAL"],                                                  "252405_com"],
+    [["ANALISTA DE LICITACAO","ANALISTA LICITACAO","LICITACAO"],                                   "142330"],
+    [["SECRETARIO","SECRETARIA","SECRETARIA EXECUTIVA"],                                           "422205_sec"],
+    // GRÁFICA/OPERACIONAL
+    [["AUXILIAR DE ACABAMENTO","AUX ACABAMENTO","AUX. ACABAMENTO"],                               "766315"],
+    [["IMPRESSOR DE OFFSET","IMPRESSOR OFFSET","IMPRESSOR DE OFSETE"],                            "766215"],
+    [["ANALISTA DE OFFSET"],                                                                       "766215_an"],
+    [["ANALISTA DE ACABAMENTO"],                                                                   "766315_an"],
+    [["SUPERVISOR DE ACABAMENTO","SUPERV ACABAMENTO"],                                             "766315_sup"],
+    [["SUPERVISOR DE GRAFICA","SUPERVISOR GRAFICA OFFSET","SUPERV OFFSET"],                       "766215_sup"],
+    // LIMPEZA
+    [["FAXINEIRO","FAXINEIRA","ASG","AGENTE DE SERVICOS GERAIS","AUX DE LIMPEZA","AUXILIAR DE LIMPEZA"], "514320"],
+    [["ENCARREGADO DE LIMPEZA"],                                                                   "514325"],
+    [["LIDER DE LIMPEZA","LÍDER DE LIMPEZA"],                                                     "514330"],
+    // OBRAS/MANUTENÇÃO
+    [["AJUDANTE DE OBRA","SERVENTE","SERVENTE DE OBRAS"],                                          "710105"],
+    [["PEDREIRO"],                                                                                  "710210"],
+    [["ELETRICISTA"],                                                                               "715505"],
+    [["BOMBEIRO HIDRAULICO","BOMBEIRO HIDRÁULICO","HIDROULICO"],                                   "716610"],
+    [["CARPINTEIRO"],                                                                               "716505"],
+    [["PINTOR"],                                                                                    "712120"],
+    [["DUTEIRO"],                                                                                   "715110"],
+    [["ARMADOR"],                                                                                   "711110"],
+    [["AUXILIAR DE MANUTENCAO","AUX MANUTENCAO","AUXILIAR DE MANUTENÇÃO PREDIAL"],               "514310"],
+    [["ENCARREGADO DE MANUTENCAO","ENCARREGADO DE MANUTENÇÃO"],                                   "620105"],
+    [["ENCARREGADO DE INSTALACAO","ENCARREGADO DE INSTALAÇÃO"],                                   "620110"],
+    [["ENCARREGADO DE OBRAS","ENCARREGADO OBRAS"],                                                "620115"],
+    [["ENCARREGADO DE ARMACAO","ENCARREGADO DE ARMAÇÃO"],                                        "620120"],
+    [["CONTRAMESTRE"],                                                                             "620125"],
+    [["MESTRE DE OBRAS","MESTRE OBRAS"],                                                          "710205"],
+    [["ALMOXARIFE","ALMOXARIFE DE OBRAS"],                                                        "621005"],
+    [["SUPERVISOR DE ALMOXARIFE","SUPERV ALMOXARIFE"],                                           "621010"],
+    [["APONTADOR"],                                                                                "712210"],
+    [["VIGIA"],                                                                                    "710305"],
+    [["OFICIAL DE OBRAS","OFICIAL"],                                                              "620115"],
+    [["ENCARREGADO"],                                                                              "620115"],
+    // TÉCNICO
+    [["TECNICO DE SEGURANCA","TECNICO DE SEGURANÇA DO TRABALHO","TST"],                           "322205"],
+    [["ASSESSOR TECNICO","ASSESSOR TÉCNICO"],                                                     "314120"],
+    [["TECNICO EM ELETROTECNICA","TECNICO EM ELETROTÉCNICA"],                                    "313110"],
+    [["TECNICO EM EDIFICACOES","TECNICO EM EDIFICAÇÕES"],                                        "311010"],
+    [["TECNICO DE QUALIDADE","QUALIDADE"],                                                        "314105"],
+    // LAB/BIOMÉDICO
+    [["BIOMEDICO","BIOMEDICA","BIOMÉDICO","BIOMÉDICA"],                                           "221205"],
+    [["TECNICO EM LABORATORIO","TÉCNICO EM LABORATÓRIO","TECNICO LABORATORIO"],                  "324205"],
+    [["ASSESSOR CIENTIFICO","ASSESSORA CIENTIFICA","SUPERVISOR TECNICO E CIENTIFICO","ASSESSORIA CIENTIFICA"], "131205"],
+    // ENGENHARIA
+    [["ARQUITETO JUNIOR","ARQUITETO JR","ARQUITETO"],                                             "214105"],
+    [["ENGENHEIRO JUNIOR","ENGENHEIRO JR","ENGENHEIRO CLT"],                                     "214110"],
+    [["ENGENHEIRO PLENO","ENGENHEIRO PL"],                                                        "214115"],
+    [["ENGENHEIRO SENIOR","ENGENHEIRO SR"],                                                       "214120"],
+    [["ENGENHEIRO MASTER"],                                                                        "214125"],
+    [["ASSISTENTE TECNICO DE ARQUITETURA","ASSIST ARQUITETURA"],                                  "214130"],
+    [["ASSISTENTE DE ENGENHARIA","ASSIST ENGENHARIA"],                                            "214135"],
+    // DIRETORIA
+    [["DIRETOR ADMINISTRATIVO","DIRETORA ADMINISTRATIVA"],                                        "123105"],
+    [["DIRETOR EXECUTIVO","DIRETORA EXECUTIVA","DIRETOR GERAL","CEO"],                            "141105"],
+    // OUTROS
+    [["COZINHEIRO","COZINHEIRA"],                                                                  "513205"],
+    [["AUXILIAR DE COZINHA","AUX COZINHA"],                                                       "513505"],
+    [["ESTOQUISTA","AUXILIAR DE ESTOQUE","AUX ESTOQUE"],                                         "414105"],
+    [["ADMINISTRADOR EM SEGURANCA","SEGURANCA DA INFORMACAO","SEGURANÇA DA INFORMAÇÃO"],         "212320"],
+    [["ESTAGIARIO","ESTAGIÁRIA","ESTAGIÁRIO"],                                                    "411005"],
+  ];
+
+  for (const [keywords, code] of mapa) {
+    const normalized = keywords.map(k=>k.normalize('NFD').replace(/[\u0300-\u036f]/g,''));
+    if (normalized.some(k => c.includes(k))) {
+      const entry = CBO_LOCAL[code];
+      if (entry) return { code, ...entry };
+    }
+  }
+  return null;
+}
+async function doBuscarCBO() {
+  const cargo = (document.getElementById('f-cargo')||{value:''}).value.trim();
+  form.cargo = cargo;
+  if (!cargo) { toast('Digite o cargo antes de buscar o CBO'); return; }
+
+  const loadEl = document.getElementById('cbo-loading');
+  const notEl  = document.getElementById('cbo-not-found');
+  const btn    = document.getElementById('btn-cbo');
+  loadEl.style.display = 'flex';
+  notEl.style.display  = 'none';
+  btn.disabled = true;
+
+  const key = cargo.toUpperCase();
+  if (cboCache[key]) {
+    applyBuscarResult(cboCache[key]);
+    loadEl.style.display = 'none';
+    btn.disabled = false;
+    return;
+  }
+
+  // 1. Tenta banco local primeiro (instantâneo)
+  const local = buscarCBOLocal(cargo);
+  if (local) {
+    loadEl.style.display = 'none';
+    btn.disabled = false;
+    const result = { code: local.code, titulo: local.titulo, descricao: local.descricao, atribuicoes: local.atribuicoes };
+    cboCache[key] = result;
+    applyBuscarResult(result);
+    return;
+  }
+
+  // 2. Fallback: informa que não encontrou e permite preencher manual
+  loadEl.style.display = 'none';
+  btn.disabled = false;
+  notEl.style.display = 'flex';
+  notEl.innerHTML = '⚠️ Cargo não localizado no banco CBO. Preencha as atribuições manualmente na próxima etapa — o sistema continua funcionando normalmente.';
+}
 
 const STEPS = ["Identificação","Atribuições","Atividades","Responsabilidade","Perfil","Revisão"];
 const NIVEL_LABELS = ['Iniciante','Básico','Intermediário','Avançado','Expert'];
@@ -964,106 +1218,7 @@ function attachEvents() {
   bind('f-experiencia','experiencia'); bind('f-idiomas','idiomas');
 }
 
-async function doBuscarCBO() {
-  const cargo = (document.getElementById('f-cargo')||{value:''}).value.trim();
-  form.cargo = cargo;
-  if (!cargo) { toast('Digite o cargo antes de buscar o CBO'); return; }
 
-  // Mostrar loading
-  const loadEl = document.getElementById('cbo-loading');
-  const notEl  = document.getElementById('cbo-not-found');
-  const btn    = document.getElementById('btn-cbo');
-  loadEl.style.display = 'flex';
-  notEl.style.display  = 'none';
-  btn.disabled = true;
-
-  // Cache da sessão
-  const key = cargo.toUpperCase();
-  if (cboCache[key]) {
-    applyBuscarResult(cboCache[key]);
-    loadEl.style.display = 'none';
-    btn.disabled = false;
-    return;
-  }
-
-  try {
-    const prompt = `Você é um especialista na Classificação Brasileira de Ocupações (CBO) do Ministério do Trabalho e Emprego do Brasil.
-
-O usuário digitou o cargo: "${cargo}"
-
-Identifique o código CBO mais adequado para este cargo e retorne SOMENTE um objeto JSON válido, sem nenhum texto antes ou depois, sem markdown, sem backticks. Formato exato:
-
-{
-  "codigo": "XXXXXX",
-  "titulo": "Título oficial conforme CBO",
-  "descricao": "Descrição completa da ocupação conforme o MTE (2-4 frases)",
-  "atribuicoes": [
-    "Atribuição típica 1",
-    "Atribuição típica 2",
-    "Atribuição típica 3",
-    "Atribuição típica 4",
-    "Atribuição típica 5",
-    "Atribuição típica 6"
-  ],
-  "encontrado": true
-}
-
-Se o cargo não existir na CBO ou for muito genérico para mapear, retorne: {"encontrado": false}
-
-Responda APENAS com o JSON, sem explicações.`;
-
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 800,
-        messages: [{ role: 'user', content: prompt }]
-      })
-    });
-
-    const data = await res.json();
-    const raw = data.content.map(i=>i.text||'').join('').trim();
-    // Strip markdown fences if present
-    const clean = raw.replace(/^```json\s*/,'').replace(/^```\s*/,'').replace(/\s*```$/,'').trim();
-    const parsed = JSON.parse(clean);
-
-    loadEl.style.display = 'none';
-    btn.disabled = false;
-
-    if (!parsed.encontrado) {
-      notEl.style.display = 'flex';
-      form.cbo=''; form.cboTitulo=''; form.cboDescricao=''; form.cboAtribuicoes=[];
-      return;
-    }
-
-    const result = {
-      code: parsed.codigo,
-      titulo: parsed.titulo,
-      descricao: parsed.descricao,
-      atribuicoes: parsed.atribuicoes
-    };
-    cboCache[key] = result;
-    applyBuscarResult(result);
-
-  } catch(e) {
-    loadEl.style.display = 'none';
-    btn.disabled = false;
-    notEl.style.display = 'flex';
-    notEl.textContent = '⚠️ Erro ao consultar o CBO. Verifique sua conexão ou preencha as atribuições manualmente.';
-    console.error('CBO lookup error:', e);
-  }
-}
-
-function applyBuscarResult(result) {
-  form.cbo = result.code;
-  form.cboTitulo = result.titulo;
-  form.cboDescricao = result.descricao;
-  form.cboAtribuicoes = result.atribuicoes;
-  if (!form.atribuicoesCompete) form.atribuicoesCompete = result.atribuicoes.join('\n');
-  renderStep();
-  toast('CBO ' + result.code + ' — ' + result.titulo + ' carregado!');
-}
 
 function setStar(idx, val) {
   form.competencias[idx].val = val;
