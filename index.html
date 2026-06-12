@@ -833,7 +833,9 @@ async function doBuscarCBO() {
   notEl.style.display  = 'none';
   btn.disabled = true;
 
-  const key = cargo.toUpperCase();
+  const key = cargo.toUpperCase().trim();
+
+  // Cache da sessão
   if (cboCache[key]) {
     applyBuscarResult(cboCache[key]);
     loadEl.style.display = 'none';
@@ -841,7 +843,7 @@ async function doBuscarCBO() {
     return;
   }
 
-  // 1. Tenta banco local primeiro (instantâneo)
+  // 1. Banco local (instantâneo, cargos da empresa)
   const local = buscarCBOLocal(cargo);
   if (local) {
     loadEl.style.display = 'none';
@@ -852,11 +854,107 @@ async function doBuscarCBO() {
     return;
   }
 
-  // 2. Fallback: informa que não encontrou e permite preencher manual
+  // 2. API do MTE via allorigins proxy (CORS livre, sem chave)
+  loadEl.querySelector('span') && (loadEl.lastChild.textContent = ' Consultando a tabela CBO do MTE...');
+  try {
+    const q = encodeURIComponent(cargo);
+    // API pública do MTE/CBO
+    const apiUrl = `https://api.ocupacoes.com.br/api/ocupacoes?termo=${q}&max=5`;
+    const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(apiUrl)}`;
+    const res = await fetch(proxyUrl, { signal: AbortSignal.timeout(8000) });
+    const json = await res.json();
+    const data = JSON.parse(json.contents || '[]');
+
+    if (Array.isArray(data) && data.length > 0) {
+      const item = data[0];
+      // Busca detalhes do cargo pelo código
+      const detUrl = `https://api.ocupacoes.com.br/api/ocupacoes/${item.codigo}`;
+      const detProxy = `https://api.allorigins.win/get?url=${encodeURIComponent(detUrl)}`;
+      let atribuicoes = [];
+      let descricao = item.titulo || '';
+      try {
+        const detRes = await fetch(detProxy, { signal: AbortSignal.timeout(6000) });
+        const detJson = await detRes.json();
+        const det = JSON.parse(detJson.contents || '{}');
+        descricao = det.descricao || det.titulo || item.titulo || '';
+        atribuicoes = (det.tarefas || det.atividades || []).slice(0,6).map(t => typeof t === 'string' ? t : t.descricao || '');
+      } catch(e2) { /* usa só o título */ }
+
+      if (!atribuicoes.length) {
+        // Gera atribuições genéricas se API não trouxe detalhes
+        atribuicoes = gerarAtribuicoesGenericas(item.titulo || cargo);
+      }
+
+      const result = {
+        code: String(item.codigo),
+        titulo: item.titulo || cargo,
+        descricao: descricao || `Profissional que atua como ${item.titulo || cargo}.`,
+        atribuicoes
+      };
+      cboCache[key] = result;
+      loadEl.style.display = 'none';
+      btn.disabled = false;
+      applyBuscarResult(result);
+      return;
+    }
+  } catch(e) { /* silencioso, cai no fallback abaixo */ }
+
+  // 3. Segundo proxy (backup)
+  try {
+    const q2 = encodeURIComponent(cargo);
+    const url2 = `https://corsproxy.io/?https://api.ocupacoes.com.br/api/ocupacoes?termo=${q2}&max=3`;
+    const res2 = await fetch(url2, { signal: AbortSignal.timeout(6000) });
+    const data2 = await res2.json();
+    if (Array.isArray(data2) && data2.length > 0) {
+      const item2 = data2[0];
+      const result2 = {
+        code: String(item2.codigo),
+        titulo: item2.titulo || cargo,
+        descricao: `Profissional que atua como ${item2.titulo || cargo}, conforme classificação do Ministério do Trabalho.`,
+        atribuicoes: gerarAtribuicoesGenericas(item2.titulo || cargo)
+      };
+      cboCache[key] = result2;
+      loadEl.style.display = 'none';
+      btn.disabled = false;
+      applyBuscarResult(result2);
+      return;
+    }
+  } catch(e2) { /* silencioso */ }
+
+  // 4. Não encontrou em nenhuma fonte
   loadEl.style.display = 'none';
   btn.disabled = false;
   notEl.style.display = 'flex';
-  notEl.innerHTML = '⚠️ Cargo não localizado no banco CBO. Preencha as atribuições manualmente na próxima etapa — o sistema continua funcionando normalmente.';
+  notEl.innerHTML = '⚠️ Cargo não localizado no CBO/MTE. Preencha as atribuições manualmente na próxima etapa — o sistema continua funcionando normalmente.';
+}
+
+function gerarAtribuicoesGenericas(titulo) {
+  const t = titulo.toLowerCase();
+  if (t.includes('auxiliar') || t.includes('assist')) return [
+    `Executar atividades de suporte na área de ${titulo}`,
+    'Organizar documentos e registros da área','Atender solicitações internas e externas',
+    'Alimentar sistemas e planilhas de controle','Apoiar a equipe nas rotinas diárias','Cumprir prazos e procedimentos estabelecidos'
+  ];
+  if (t.includes('analista')) return [
+    `Analisar dados e processos da área de ${titulo}`,
+    'Elaborar relatórios e indicadores de desempenho','Propor melhorias nos processos',
+    'Apoiar a tomada de decisão com análises','Controlar informações e registros','Comunicar resultados às lideranças'
+  ];
+  if (t.includes('coord') || t.includes('superv') || t.includes('lider') || t.includes('líder')) return [
+    `Coordenar equipe e processos de ${titulo}`,
+    'Distribuir e acompanhar atividades da equipe','Garantir qualidade e cumprimento de prazos',
+    'Elaborar relatórios para a gestão','Implementar melhorias de processo','Treinar e desenvolver colaboradores'
+  ];
+  if (t.includes('gerente') || t.includes('diretor')) return [
+    `Planejar e gerir a área de ${titulo}`,
+    'Liderar equipes e garantir resultados','Controlar orçamentos e indicadores',
+    'Definir estratégias e prioridades','Reportar resultados à diretoria','Tomar decisões de alto impacto'
+  ];
+  return [
+    `Executar atividades inerentes ao cargo de ${titulo}`,
+    'Cumprir metas e objetivos estabelecidos','Colaborar com a equipe e demais setores',
+    'Manter registros e documentações atualizados','Seguir normas e procedimentos internos','Participar de treinamentos e capacitações'
+  ];
 }
 
 const STEPS = ["Identificação","Atribuições","Atividades","Responsabilidade","Perfil","Revisão"];
