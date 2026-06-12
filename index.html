@@ -1,0 +1,2576 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mapeamento de Cargos</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --blue: #1a56db; --blue-dark: #1540a8; --blue-light: #e8f0fe;
+    --green: #0d9f6e; --green-light: #e6f9f3;
+    --gray-50: #f9fafb; --gray-100: #f3f4f6; --gray-200: #e5e7eb;
+    --gray-400: #9ca3af; --gray-600: #4b5563; --gray-700: #374151; --gray-900: #111827;
+    --red: #dc2626; --red-light: #fef2f2;
+    --amber: #d97706; --amber-light: #fffbeb;
+    --purple-light: #f5f3ff; --purple: #7c3aed;
+    --radius: 8px; --shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.06);
+  }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f0f4f8; color: var(--gray-900); min-height: 100vh; }
+
+  .site-header { background: var(--blue); color: #fff; padding: 0.75rem 1.5rem; display: flex; align-items: center; gap: 12px; }
+  .site-header .logo { width: 28px; height: 28px; background: rgba(255,255,255,0.2); border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 14px; }
+  .site-header .title { font-weight: 600; font-size: 15px; }
+  .site-header .subtitle { font-size: 12px; opacity: 0.8; }
+  .back-btn { margin-left: auto; background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); color: #fff; padding: 6px 14px; border-radius: var(--radius); font-size: 13px; cursor: pointer; }
+  .back-btn:hover { background: rgba(255,255,255,0.25); }
+
+  .main { max-width: 700px; margin: 2rem auto; padding: 0 1rem 3rem; }
+
+  .stepper { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 2rem; position: relative; }
+  .stepper::before { content:''; position:absolute; top:16px; left:16px; right:16px; height:2px; background: var(--gray-200); z-index:0; }
+  .step { display: flex; flex-direction: column; align-items: center; gap: 6px; flex: 1; position: relative; z-index:1; }
+  .step-circle { width: 32px; height: 32px; border-radius: 50%; border: 2px solid var(--gray-200); background: #fff; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 600; color: var(--gray-400); transition: all 0.2s; }
+  .step-label { font-size: 11px; color: var(--gray-400); text-align: center; line-height: 1.3; }
+  .step.active .step-circle { background: var(--blue); border-color: var(--blue); color: #fff; }
+  .step.active .step-label { color: var(--blue); font-weight: 600; }
+  .step.done .step-circle { background: var(--green); border-color: var(--green); color: #fff; }
+  .step.done .step-label { color: var(--green); }
+
+  .card { background: #fff; border-radius: 12px; box-shadow: var(--shadow); padding: 2rem; }
+  .card-title { font-size: 20px; font-weight: 700; color: var(--gray-900); margin-bottom: 0.25rem; }
+  .card-sub { font-size: 13px; color: var(--gray-600); margin-bottom: 1.5rem; }
+
+  .alert { display: flex; align-items: flex-start; gap: 10px; padding: 10px 14px; border-radius: var(--radius); font-size: 13px; margin-bottom: 1.25rem; line-height: 1.5; }
+  .alert-green { background: var(--green-light); color: #065f46; border: 1px solid #a7f3d0; }
+  .alert-blue { background: var(--blue-light); color: #1e40af; border: 1px solid #bfdbfe; }
+  .alert-amber { background: var(--amber-light); color: #92400e; border: 1px solid #fde68a; }
+  .alert-purple { background: var(--purple-light); color: #5b21b6; border: 1px solid #ddd6fe; }
+
+  .form-group { margin-bottom: 1.1rem; }
+  .form-group label { display: block; font-size: 13px; font-weight: 500; color: var(--gray-700); margin-bottom: 5px; }
+  .form-group label .req { color: var(--red); }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  input[type=text], input[type=date], select, textarea {
+    width: 100%; padding: 9px 12px; border: 1.5px solid var(--gray-200); border-radius: var(--radius);
+    font-size: 14px; color: var(--gray-900); background: #fff; font-family: inherit; transition: border-color 0.15s;
+  }
+  input:focus, select:focus, textarea:focus { outline: none; border-color: var(--blue); }
+  textarea { resize: vertical; min-height: 100px; line-height: 1.6; }
+
+  /* CBO */
+  .cbo-box { display: flex; gap: 10px; align-items: flex-start; margin-bottom: 1.1rem; }
+  .cbo-tag { background: var(--blue-light); border: 1px solid #bfdbfe; border-radius: var(--radius); padding: 10px 14px; text-align: center; min-width: 90px; }
+  .cbo-tag .cbo-label { font-size: 10px; font-weight: 600; color: var(--blue); text-transform: uppercase; letter-spacing: 0.06em; }
+  .cbo-tag .cbo-num { font-size: 22px; font-weight: 700; color: var(--blue); line-height: 1.2; }
+  .cbo-info { flex: 1; background: var(--green-light); border: 1px solid #a7f3d0; border-radius: var(--radius); padding: 10px 14px; }
+  .cbo-title { font-size: 14px; font-weight: 600; color: #065f46; }
+  .cbo-status { font-size: 12px; color: #059669; margin-top: 3px; }
+  .buscar-cbo-row { display: flex; gap: 10px; align-items: flex-end; }
+  .buscar-cbo-row input { flex: 1; }
+  .btn-cbo { padding: 9px 18px; background: var(--blue); color: #fff; border: none; border-radius: var(--radius); font-size: 13px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+  .btn-cbo:hover { background: var(--blue-dark); }
+  .hint { font-size: 12px; color: var(--gray-600); margin-top: 5px; }
+  .cbo-descritivo { background: var(--gray-50); border: 1.5px solid var(--gray-200); border-radius: var(--radius); padding: 1rem 1.25rem; margin-bottom: 1.25rem; }
+  .cbo-descritivo h4 { font-size: 12px; font-weight: 700; color: var(--gray-700); margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.04em; }
+  .cbo-descritivo p { font-size: 13px; color: var(--gray-600); line-height: 1.7; }
+  .cbo-descritivo ul { padding-left: 1.1rem; }
+  .cbo-descritivo ul li { font-size: 13px; color: var(--gray-600); line-height: 1.8; }
+
+  /* SECTION DIVIDER */
+  .section-divider { font-size: 12px; font-weight: 700; color: var(--gray-600); text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1.5px solid var(--gray-200); padding-bottom: 7px; margin: 1.75rem 0 1.1rem; display: flex; align-items: center; gap: 8px; }
+  .section-divider span { background: var(--blue); color: #fff; width: 20px; height: 20px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 11px; flex-shrink: 0; }
+
+  /* LEVEL SELECTOR */
+  .level-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 6px; }
+  .level-opt { border: 1.5px solid var(--gray-200); border-radius: var(--radius); padding: 12px 10px; cursor: pointer; text-align: center; transition: all 0.15s; }
+  .level-opt:hover { border-color: var(--blue); background: var(--blue-light); }
+  .level-opt.selected { border-color: var(--blue); background: var(--blue-light); }
+  .level-opt .level-name { font-size: 13px; font-weight: 600; color: var(--gray-900); }
+  .level-opt.selected .level-name { color: var(--blue); }
+  .level-opt .level-desc { font-size: 11px; color: var(--gray-400); margin-top: 3px; line-height: 1.4; }
+
+  /* COMPETENCIAS */
+  .comp-item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: var(--gray-50); border-radius: var(--radius); margin-bottom: 7px; border: 1px solid var(--gray-200); }
+  .comp-label { font-size: 13px; color: var(--gray-700); flex: 1; font-weight: 500; }
+  .stars { display: flex; gap: 3px; }
+  .star { width: 28px; height: 28px; border-radius: 4px; border: 1.5px solid var(--gray-200); background: #fff; cursor: pointer; font-size: 13px; display: flex; align-items: center; justify-content: center; color: var(--gray-400); transition: all 0.1s; }
+  .star:hover, .star.on { background: #fef3c7; border-color: #fbbf24; color: #d97706; }
+  .star-val { font-size: 11px; color: var(--gray-400); min-width: 76px; text-align: right; }
+
+  /* INTERESSE OPTIONS */
+  .interesse-grid { display: grid; grid-template-columns: 1fr; gap: 8px; margin-top: 6px; }
+  .interesse-opt { border: 1.5px solid var(--gray-200); border-radius: var(--radius); padding: 11px 14px; cursor: pointer; transition: all 0.15s; display: flex; align-items: flex-start; gap: 10px; }
+  .interesse-opt:hover { border-color: var(--blue); background: var(--blue-light); }
+  .interesse-opt.selected { border-color: var(--blue); background: var(--blue-light); }
+  .interesse-opt .io-radio { width: 16px; height: 16px; border-radius: 50%; border: 2px solid var(--gray-400); flex-shrink: 0; margin-top: 2px; display: flex; align-items: center; justify-content: center; }
+  .interesse-opt.selected .io-radio { border-color: var(--blue); background: var(--blue); }
+  .interesse-opt.selected .io-radio::after { content:''; width: 6px; height: 6px; background: #fff; border-radius: 50%; }
+  .interesse-opt .io-text { font-size: 13px; color: var(--gray-700); line-height: 1.4; }
+  .interesse-opt.selected .io-text { color: var(--blue-dark); font-weight: 500; }
+
+  /* DISPONIBILIDADE */
+  .dispon-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 6px; }
+  .dispon-opt { border: 1.5px solid var(--gray-200); border-radius: var(--radius); padding: 10px 8px; cursor: pointer; text-align: center; transition: all 0.15s; }
+  .dispon-opt:hover { border-color: var(--green); background: var(--green-light); }
+  .dispon-opt.selected { border-color: var(--green); background: var(--green-light); }
+  .dispon-opt .do-icon { font-size: 18px; margin-bottom: 4px; }
+  .dispon-opt .do-label { font-size: 12px; color: var(--gray-700); line-height: 1.3; font-weight: 500; }
+  .dispon-opt.selected .do-label { color: var(--green); }
+
+  /* REVISION */
+  .rev-section { margin-bottom: 1.25rem; }
+  .rev-section h4 { font-size: 12px; font-weight: 700; color: var(--gray-700); text-transform: uppercase; letter-spacing: 0.04em; border-bottom: 1px solid var(--gray-200); padding-bottom: 6px; margin-bottom: 10px; }
+  .rev-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px; }
+  .rev-item .rv-label { font-size: 11px; color: var(--gray-400); margin-bottom: 2px; text-transform: uppercase; letter-spacing: 0.04em; }
+  .rev-item .rv-val { font-size: 14px; color: var(--gray-900); font-weight: 500; }
+  .rev-text { font-size: 13px; color: var(--gray-700); line-height: 1.7; background: var(--gray-50); border-radius: 6px; padding: 10px; }
+  .bar-row { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+  .bar-name { font-size: 13px; color: var(--gray-700); width: 160px; flex-shrink: 0; }
+  .bar-track { flex: 1; height: 8px; background: var(--gray-200); border-radius: 4px; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 4px; }
+  .bar-score { font-size: 12px; color: var(--gray-600); min-width: 28px; text-align: right; }
+
+  /* NAV */
+  .nav-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 2rem; padding-top: 1.25rem; border-top: 1px solid var(--gray-200); }
+  .btn-sec { padding: 9px 20px; background: #fff; color: var(--gray-700); border: 1.5px solid var(--gray-200); border-radius: var(--radius); font-size: 14px; font-weight: 500; cursor: pointer; }
+  .btn-sec:hover { background: var(--gray-50); }
+  .btn-primary { padding: 9px 22px; background: var(--blue); color: #fff; border: none; border-radius: var(--radius); font-size: 14px; font-weight: 600; cursor: pointer; }
+  .btn-primary:hover { background: var(--blue-dark); }
+  .btn-success { background: var(--green); }
+  .btn-success:hover { background: #0a7a56; }
+
+  .screen { display: none; }
+  .screen.visible { display: block; }
+
+  /* HOME */
+  .home-hero { text-align: center; padding: 2.5rem 1rem; }
+  .home-hero h1 { font-size: 26px; font-weight: 700; margin-bottom: 0.5rem; }
+  .home-hero p { font-size: 15px; color: var(--gray-600); margin-bottom: 2rem; max-width: 500px; margin-left: auto; margin-right: auto; }
+  .home-btns { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+  .home-btn { padding: 12px 28px; border-radius: var(--radius); font-size: 15px; font-weight: 600; cursor: pointer; border: none; }
+  .home-btn-primary { background: var(--blue); color: #fff; }
+  .home-btn-primary:hover { background: var(--blue-dark); }
+  .home-btn-outline { background: #fff; color: var(--gray-700); border: 1.5px solid var(--gray-200) !important; }
+  .home-btn-outline:hover { background: var(--gray-50); }
+
+  /* RH */
+  .login-wrap { max-width: 380px; margin: 0 auto; }
+  .login-card { background: #fff; border-radius: 12px; box-shadow: var(--shadow); padding: 2rem; }
+  .error-msg { font-size: 12px; color: var(--red); margin-top: 6px; display: none; }
+  .metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 1.5rem; }
+  .metric { background: #fff; border-radius: var(--radius); padding: 1rem; box-shadow: var(--shadow); }
+  .metric .m-lbl { font-size: 12px; color: var(--gray-400); margin-bottom: 4px; }
+  .metric .m-val { font-size: 26px; font-weight: 700; }
+  .rh-toolbar { display: flex; align-items: center; gap: 10px; margin-bottom: 1rem; flex-wrap: wrap; }
+  .rh-toolbar h2 { font-size: 16px; font-weight: 700; flex: 1; }
+  .search-inp { padding: 7px 12px; border: 1.5px solid var(--gray-200); border-radius: var(--radius); font-size: 13px; width: 200px; font-family: inherit; }
+  .filter-sel, .status-sel { padding: 7px 10px; border: 1.5px solid var(--gray-200); border-radius: var(--radius); font-size: 13px; font-family: inherit; }
+  .fichas-list { display: flex; flex-direction: column; gap: 8px; }
+  .ficha-card { background: #fff; border-radius: 10px; border: 1.5px solid var(--gray-200); padding: 1rem 1.25rem; cursor: pointer; transition: border-color 0.15s; box-shadow: var(--shadow); }
+  .ficha-card:hover { border-color: #93c5fd; }
+  .ficha-card.sel { border-color: var(--blue); }
+  .fc-top { display: flex; align-items: center; gap: 12px; }
+  .avatar { width: 40px; height: 40px; border-radius: 50%; background: var(--blue-light); color: var(--blue); display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; flex-shrink: 0; }
+  .badge { font-size: 11px; padding: 3px 10px; border-radius: 20px; font-weight: 600; }
+  .b-new { background: #dbeafe; color: #1d4ed8; }
+  .b-prog { background: #fef3c7; color: #92400e; }
+  .b-done { background: #d1fae5; color: #065f46; }
+  .detail-panel { background: #fff; border-radius: 12px; box-shadow: var(--shadow); padding: 1.5rem; margin-top: 1rem; }
+  .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 1rem 0; }
+  .df .df-l { font-size: 11px; color: var(--gray-400); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 2px; }
+  .df .df-v { font-size: 14px; font-weight: 500; }
+  .pdi-area { margin-top: 1.25rem; padding-top: 1.25rem; border-top: 1px solid var(--gray-200); }
+  .pdi-area h3 { font-size: 14px; font-weight: 700; margin-bottom: 0.75rem; }
+  .pdi-actions { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; align-items: center; }
+  .btn-save { padding: 8px 18px; background: var(--blue); color: #fff; border: none; border-radius: var(--radius); font-size: 13px; font-weight: 600; cursor: pointer; }
+  .btn-save:hover { background: var(--blue-dark); }
+  .btn-gerar-pdi { padding: 8px 16px; background: linear-gradient(135deg, #7c3aed, #4f46e5); color: #fff; border: none; border-radius: var(--radius); font-size: 13px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 6px; }
+  .btn-gerar-pdi:hover { background: linear-gradient(135deg, #6d28d9, #4338ca); }
+  .btn-gerar-pdi:disabled { opacity: 0.6; cursor: not-allowed; }
+  .empty { text-align: center; padding: 3rem; color: var(--gray-400); font-size: 14px; }
+
+  /* RH TABS */
+  .rh-tabs { display: flex; gap: 0; margin-bottom: 1.5rem; border-bottom: 2px solid var(--gray-200); }
+  .rh-tab { padding: 10px 20px; font-size: 14px; font-weight: 500; color: var(--gray-400); cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -2px; background: none; border-top: none; border-left: none; border-right: none; transition: all 0.15s; }
+  .rh-tab:hover { color: var(--gray-700); }
+  .rh-tab.active { color: var(--blue); border-bottom-color: var(--blue); font-weight: 600; }
+
+  /* CONTROLE PDI TABLE */
+  .ctrl-toolbar { display: flex; align-items: center; gap: 10px; margin-bottom: 1rem; flex-wrap: wrap; }
+  .ctrl-toolbar h2 { font-size: 16px; font-weight: 700; flex: 1; }
+  .ctrl-table-wrap { overflow-x: auto; border-radius: var(--radius); box-shadow: var(--shadow); }
+  .ctrl-table { width: 100%; border-collapse: collapse; background: #fff; font-size: 13px; min-width: 800px; }
+  .ctrl-table th { background: #1a56db; color: #fff; padding: 10px 14px; text-align: left; font-size: 12px; font-weight: 600; letter-spacing: 0.03em; white-space: nowrap; }
+  .ctrl-table th:first-child { border-radius: 8px 0 0 0; }
+  .ctrl-table th:last-child { border-radius: 0 8px 0 0; }
+  .ctrl-table td { padding: 10px 14px; border-bottom: 1px solid var(--gray-200); vertical-align: top; line-height: 1.5; }
+  .ctrl-table tr:last-child td { border-bottom: none; }
+  .ctrl-table tr:hover td { background: var(--gray-50); }
+  .ctrl-table tr.row-done td { opacity: 0.65; }
+  .status-pill { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 20px; white-space: nowrap; }
+  .sp-novo { background: #dbeafe; color: #1d4ed8; }
+  .sp-andamento { background: #fef3c7; color: #92400e; }
+  .sp-concluido { background: #d1fae5; color: #065f46; }
+  .prazo-ok { color: var(--green); font-weight: 600; }
+  .prazo-venc { color: var(--red); font-weight: 600; }
+  .prazo-prox { color: var(--amber); font-weight: 600; }
+  .ctrl-edit-btn { padding: 4px 10px; background: transparent; border: 1px solid var(--gray-200); border-radius: 6px; font-size: 11px; color: var(--gray-600); cursor: pointer; }
+  .ctrl-edit-btn:hover { background: var(--blue-light); color: var(--blue); border-color: #bfdbfe; }
+  .prazo-input { border: 1px solid var(--gray-200); border-radius: 6px; padding: 4px 8px; font-size: 12px; font-family: inherit; width: 130px; }
+  .obs-input { border: 1px solid var(--gray-200); border-radius: 6px; padding: 4px 8px; font-size: 12px; font-family: inherit; width: 100%; min-width: 120px; }
+
+  /* SMART METAS */
+  .smart-table { width:100%; border-collapse:collapse; font-size:12px; margin-top:10px; }
+  .smart-table th { background:#1a56db; color:#fff; padding:7px 10px; text-align:left; font-size:11px; font-weight:600; }
+  .smart-table td { padding:6px 8px; border-bottom:1px solid var(--gray-200); vertical-align:top; }
+  .smart-table tr:last-child td { border-bottom:none; }
+  .smart-table tr:hover td { background:var(--gray-50); }
+  .smart-inp { width:100%; border:1px solid var(--gray-200); border-radius:5px; padding:4px 7px; font-size:12px; font-family:inherit; background:#fff; color:var(--gray-900); }
+  .smart-inp:focus { outline:none; border-color:var(--blue); }
+  .btn-add-meta { padding:6px 14px; background:transparent; border:1.5px dashed var(--blue); border-radius:6px; color:var(--blue); font-size:12px; font-weight:600; cursor:pointer; margin-top:8px; width:100%; }
+  .btn-add-meta:hover { background:var(--blue-light); }
+  .btn-del-meta { background:none; border:none; color:var(--gray-400); cursor:pointer; font-size:14px; padding:2px 5px; }
+  .btn-del-meta:hover { color:var(--red); }
+  /* prazo semáforo visual */
+  .semaforo { display:inline-flex; align-items:center; gap:5px; font-size:11px; font-weight:700; padding:3px 9px; border-radius:20px; }
+  .sem-verde { background:#d1fae5; color:#065f46; }
+  .sem-amarelo { background:#fef3c7; color:#92400e; }
+  .sem-vermelho { background:#fee2e2; color:#991b1b; }
+  /* 360 */
+  .av360-wrap { max-width:660px; }
+  .av360-section { background:#fff; border-radius:10px; border:0.5px solid var(--gray-200); padding:1.25rem; margin-bottom:1rem; box-shadow:var(--shadow); }
+  .av360-title { font-size:14px; font-weight:700; margin-bottom:1rem; display:flex; align-items:center; gap:8px; }
+  .av360-comp-row { display:flex; align-items:center; gap:10px; margin-bottom:8px; }
+  .av360-comp-name { font-size:13px; color:var(--gray-700); width:170px; flex-shrink:0; }
+  .av360-stars { display:flex; gap:3px; }
+  .av360-star { width:26px; height:26px; border-radius:4px; border:1.5px solid var(--gray-200); background:#fff; cursor:pointer; font-size:12px; display:flex; align-items:center; justify-content:center; color:var(--gray-400); transition:all 0.1s; }
+  .av360-star:hover, .av360-star.on { background:#fef3c7; border-color:#fbbf24; color:#d97706; }
+  .av360-val { font-size:11px; color:var(--gray-400); min-width:76px; }
+  .comp-compare { display:flex; align-items:center; gap:8px; margin-bottom:6px; }
+  .cc-name { font-size:12px; color:var(--gray-700); width:150px; flex-shrink:0; }
+  .cc-bar-wrap { flex:1; display:flex; flex-direction:column; gap:3px; }
+  .cc-bar-row { display:flex; align-items:center; gap:6px; font-size:11px; }
+  .cc-bar-lbl { width:60px; color:var(--gray-400); font-size:10px; }
+  .cc-track { flex:1; height:7px; background:var(--gray-200); border-radius:4px; overflow:hidden; }
+  .cc-fill-antes { height:100%; background:#9ca3af; border-radius:4px; }
+  .cc-fill-depois { height:100%; background:#0d9f6e; border-radius:4px; }
+  .cc-score { font-size:11px; font-weight:600; min-width:28px; }
+  /* PDF */
+  .btn-pdf { padding:8px 16px; background:#dc2626; color:#fff; border:none; border-radius:var(--radius); font-size:13px; font-weight:600; cursor:pointer; display:flex; align-items:center; gap:6px; }
+  .btn-pdf:hover { background:#b91c1c; }
+  .btn-pdf:disabled { opacity:0.6; cursor:not-allowed; }
+  /* Email alert */
+  .btn-email { padding:8px 16px; background:#0d9f6e; color:#fff; border:none; border-radius:var(--radius); font-size:13px; font-weight:600; cursor:pointer; display:flex; align-items:center; gap:6px; }
+  .btn-email:hover { background:#0a7a56; }
+  .btn-word:hover { background: #1a4e87; }
+  .btn-word:disabled { opacity: 0.6; cursor: not-allowed; }
+  .btn-csv { padding: 8px 16px; background: #166534; color: #fff; border: none; border-radius: var(--radius); font-size: 13px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 6px; }
+  .btn-csv:hover { background: #14532d; }
+  .success-screen { text-align: center; padding: 3rem 1rem; }
+  .success-icon { width: 72px; height: 72px; background: var(--green-light); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1.5rem; }
+
+  .spinner { width: 18px; height: 18px; border: 2px solid var(--gray-200); border-top-color: var(--blue); border-radius: 50%; animation: spin 0.7s linear infinite; display: inline-block; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .toast { position: fixed; bottom: 1.5rem; right: 1.5rem; background: var(--gray-900); color: #fff; padding: 10px 18px; border-radius: var(--radius); font-size: 13px; font-weight: 500; opacity: 0; transition: opacity 0.3s; pointer-events: none; z-index: 9999; max-width: 320px; }
+  .toast.show { opacity: 1; }
+
+  /* RH detail text blocks */
+  .rh-block { margin-bottom: 1rem; }
+  .rh-block .rh-bl { font-size: 11px; color: var(--gray-400); text-transform: uppercase; letter-spacing: .04em; margin-bottom: 4px; font-weight: 600; }
+  .rh-block .rh-bv { font-size: 13px; color: var(--gray-700); line-height: 1.7; background: var(--gray-50); border-radius: 6px; padding: 10px; }
+  .rh-block .rh-bv-warn { background: var(--amber-light); border: 1px solid #fde68a; }
+  .rh-block .rh-bv-purple { background: var(--purple-light); border: 1px solid #ddd6fe; }
+
+  @media (max-width: 600px) {
+    .form-row, .rev-grid, .detail-grid, .metrics { grid-template-columns: 1fr; }
+    .level-grid, .dispon-grid { grid-template-columns: 1fr; }
+    .search-inp { width: 100%; }
+  }
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="logo">📋</div>
+  <div>
+    <div class="title">Mapeamento de Cargos</div>
+    <div class="subtitle">Gestão de Pessoas</div>
+  </div>
+  <button class="back-btn" onclick="goHome()">← Voltar</button>
+</header>
+
+<div class="main">
+
+  <!-- HOME -->
+  <div class="screen visible" id="screen-home">
+    <div class="card home-hero">
+      <svg width="48" height="48" fill="none" viewBox="0 0 48 48" style="margin:0 auto 1rem"><rect width="48" height="48" rx="12" fill="#dbeafe"/><path d="M16 13h16a2 2 0 0 1 2 2v18a2 2 0 0 1-2 2H16a2 2 0 0 1-2-2V15a2 2 0 0 1 2-2z" stroke="#1a56db" stroke-width="2"/><path d="M19 19h10M19 23h10M19 27h6" stroke="#1a56db" stroke-width="2" stroke-linecap="round"/></svg>
+      <h1>Mapeamento de Cargos</h1>
+      <p>Preencha sua ficha de identificação de cargo, atribuições e perfil profissional. Suas respostas fundamentam o PDI e o desenvolvimento da sua carreira.</p>
+      <div class="home-btns">
+        <button class="home-btn home-btn-primary" onclick="startForm()">📝 Preencher minha ficha</button>
+        <button class="home-btn home-btn-outline" onclick="goRH()">🔒 Módulo RH</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- FORM -->
+  <div class="screen" id="screen-form">
+    <div class="stepper" id="stepper"></div>
+    <div class="card" id="step-content"></div>
+  </div>
+
+  <!-- SUCCESS -->
+  <div class="screen" id="screen-success">
+    <div class="card success-screen">
+      <div class="success-icon">
+        <svg width="36" height="36" fill="none" viewBox="0 0 36 36"><path d="M8 18l7 7 13-14" stroke="#0d9f6e" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <h2 style="font-size:22px;font-weight:700;margin-bottom:0.5rem">Ficha enviada com sucesso!</h2>
+      <p style="font-size:14px;color:var(--gray-600);margin-bottom:1.5rem">O RH irá analisar sua ficha e entrará em contato para elaborar seu PDI — Plano de Desenvolvimento Individual.</p>
+      <button class="btn-primary" onclick="goHome()">Voltar ao início</button>
+    </div>
+  </div>
+
+  <!-- RH LOGIN -->
+  <div class="screen" id="screen-rh-login">
+    <div class="login-wrap">
+      <div class="login-card">
+        <div style="text-align:center;margin-bottom:1.5rem">
+          <div style="width:56px;height:56px;background:var(--blue-light);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 1rem;font-size:24px">🔒</div>
+          <div style="font-size:20px;font-weight:700;margin-bottom:0.25rem">Módulo RH</div>
+          <div style="font-size:13px;color:var(--gray-600)">Acesso restrito à equipe de Recursos Humanos</div>
+        </div>
+        <div class="form-group" style="margin-bottom:4px">
+          <label>Senha de acesso</label>
+          <input type="password" id="rh-pass" placeholder="••••••••" onkeydown="if(event.key==='Enter')loginRH()" autocomplete="current-password">
+        </div>
+        <p class="error-msg" id="login-err">Senha incorreta. Tente novamente.</p>
+        <button class="btn-primary" style="width:100%;margin-top:1rem;justify-content:center" onclick="loginRH()">Acessar painel</button>
+        <div style="margin-top:12px;text-align:center"><button class="btn-sec" onclick="goHome()">← Voltar</button></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RH PAINEL -->
+  <div class="screen" id="screen-rh-painel">
+    <div class="metrics">
+      <div class="metric"><div class="m-lbl">Fichas recebidas</div><div class="m-val" id="m-total">0</div></div>
+      <div class="metric"><div class="m-lbl">Aguardando PDI</div><div class="m-val" id="m-aguard">0</div></div>
+      <div class="metric"><div class="m-lbl">Em andamento</div><div class="m-val" id="m-prog">0</div></div>
+      <div class="metric"><div class="m-lbl">Concluídos</div><div class="m-val" id="m-conc">0</div></div>
+    </div>
+
+    <div id="banner-config" style="display:none;background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:12px 16px;margin-bottom:1.25rem;font-size:13px;color:#92400e;line-height:1.6">
+      ⚠️ <strong>Backend não configurado.</strong> As fichas estão sendo salvas apenas neste navegador.
+      Para receber fichas de qualquer máquina, configure o Google Sheets:
+      <a href="#" onclick="document.getElementById('modal-config').style.display='flex';return false" style="color:#1a56db;font-weight:600;margin-left:4px">Ver instruções →</a>
+    </div>
+
+    <div class="rh-tabs">
+      <button class="rh-tab active" id="tab-fichas" onclick="switchTab('fichas')">📋 Fichas e PDI</button>
+      <button class="rh-tab" id="tab-controle" onclick="switchTab('controle')">📊 Controle de PDI</button>
+      <button class="rh-tab" id="tab-360" onclick="switchTab('360')">🔄 Avaliação 360°</button>
+      <button class="rh-tab" id="tab-dossie" onclick="switchTab('dossie')">📁 Dossiê / PDF</button>
+      <div style="flex:1"></div>
+      <button class="btn-sec" style="margin-bottom:2px" onclick="logout()">Sair</button>
+    </div>
+
+    <!-- ABA FICHAS -->
+    <div id="tab-content-fichas">
+      <div class="rh-toolbar">
+        <h2>Fichas recebidas</h2>
+        <input class="search-inp" type="text" placeholder="Buscar nome ou cargo..." oninput="renderFichas()" id="rh-search">
+        <select class="filter-sel" onchange="renderFichas()" id="rh-filter">
+          <option value="">Todos</option>
+          <option value="novo">Aguardando PDI</option>
+          <option value="andamento">Em andamento</option>
+          <option value="concluido">Concluído</option>
+        </select>
+      </div>
+      <div class="fichas-list" id="fichas-list"></div>
+      <div id="detail-area"></div>
+    </div>
+
+    <!-- ABA CONTROLE -->
+    <div id="tab-content-controle" style="display:none">
+      <div class="ctrl-toolbar">
+        <h2>Controle de Planos de Desenvolvimento</h2>
+        <input class="search-inp" type="text" placeholder="Buscar colaborador..." oninput="renderControle()" id="ctrl-search">
+        <select class="filter-sel" onchange="renderControle()" id="ctrl-filter">
+          <option value="">Todos os status</option>
+          <option value="novo">Aguardando PDI</option>
+          <option value="andamento">Em andamento</option>
+          <option value="concluido">Concluído</option>
+        </select>
+        <button class="btn-word" onclick="exportarTabelaWord()">📄 Exportar Word</button>
+        <button class="btn-csv" onclick="exportarCSV()">📊 Exportar CSV</button>
+      </div>
+      <div class="ctrl-table-wrap">
+        <table class="ctrl-table">
+          <thead>
+            <tr>
+              <th>Colaborador</th>
+              <th>Função / CBO</th>
+              <th>Depto / Nível</th>
+              <th>Síntese do PDI</th>
+              <th>Prazo</th>
+              <th>Status</th>
+              <th>Obs. RH</th>
+              <th>Ações</th>
+            </tr>
+          </thead>
+          <tbody id="ctrl-tbody"></tbody>
+        </table>
+      </div>
+      <div id="ctrl-empty" class="empty" style="display:none">📭 Nenhum colaborador encontrado.</div>
+    </div>
+
+    <!-- ABA 360 -->
+    <div id="tab-content-360" style="display:none">
+      <div class="av360-wrap">
+        <div class="rh-toolbar" style="margin-bottom:1rem">
+          <h2>Avaliação 360° — Antes × Depois</h2>
+          <select class="filter-sel" onchange="renderAv360()" id="sel-colab-360">
+            <option value="">Selecione o colaborador...</option>
+          </select>
+          <button class="btn-save" onclick="salvarAv360()">💾 Salvar avaliação</button>
+        </div>
+        <div id="av360-content">
+          <div class="empty">Selecione um colaborador para iniciar a avaliação 360°.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ABA DOSSIÊ -->
+    <div id="tab-content-dossie" style="display:none">
+      <div class="rh-toolbar" style="margin-bottom:1rem">
+        <h2>Dossiê do Colaborador — PDF Completo</h2>
+        <select class="filter-sel" onchange="selecionarDossie()" id="sel-colab-dossie">
+          <option value="">Selecione o colaborador...</option>
+        </select>
+        <button class="btn-pdf" id="btn-gerar-dossie" onclick="gerarDossiePDF()" disabled>🖨️ Gerar PDF</button>
+        <button class="btn-email" onclick="enviarAlertaEmail()">📧 Alertas de prazo</button>
+      </div>
+      <div id="dossie-preview" class="empty">Selecione um colaborador para visualizar o dossiê antes de gerar o PDF.</div>
+    </div>
+  </div>
+
+</div>
+
+<!-- MODAL CONFIG BACKEND -->
+<div id="modal-config" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:10000;align-items:center;justify-content:center;padding:1rem">
+  <div style="background:#fff;border-radius:16px;padding:2rem;max-width:580px;width:100%;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.3)">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem">
+      <h2 style="font-size:18px;font-weight:700;margin:0">⚙️ Configurar Google Sheets</h2>
+      <button onclick="document.getElementById('modal-config').style.display='none'" style="background:none;border:none;font-size:20px;cursor:pointer;color:#6b7280">✕</button>
+    </div>
+
+    <div style="font-size:13px;line-height:1.8;color:#374151">
+
+      <div style="background:#e8f0fe;border-radius:8px;padding:12px 14px;margin-bottom:1.25rem;color:#1e40af;font-size:13px">
+        📋 <strong>O que vai acontecer:</strong> qualquer colaborador que preencher a ficha em qualquer computador terá os dados salvos automaticamente na sua planilha Google Sheets. Você acessa o módulo RH de qualquer lugar e vê tudo.
+      </div>
+
+      <p style="font-weight:700;margin-bottom:8px">PASSO 1 — Criar a planilha</p>
+      <ol style="padding-left:1.2rem;margin-bottom:1rem">
+        <li>Acesse <strong>sheets.google.com</strong> e crie uma nova planilha em branco</li>
+        <li>Renomeie a aba para <code style="background:#f3f4f6;padding:1px 5px;border-radius:3px">Fichas</code></li>
+        <li>Copie o ID da planilha da URL (parte entre <code style="background:#f3f4f6;padding:1px 5px;border-radius:3px">/d/</code> e <code style="background:#f3f4f6;padding:1px 5px;border-radius:3px">/edit</code>)</li>
+      </ol>
+
+      <p style="font-weight:700;margin-bottom:8px">PASSO 2 — Criar o Apps Script</p>
+      <ol style="padding-left:1.2rem;margin-bottom:1rem">
+        <li>Na planilha, clique em <strong>Extensões → Apps Script</strong></li>
+        <li>Apague todo o código existente</li>
+        <li>Cole o código abaixo e salve (Ctrl+S)</li>
+      </ol>
+
+      <div style="background:#1e293b;border-radius:8px;padding:14px;margin-bottom:1rem;position:relative">
+        <button onclick="copiarScript()" style="position:absolute;top:8px;right:8px;background:#334155;color:#94a3b8;border:none;border-radius:5px;padding:4px 10px;font-size:11px;cursor:pointer">📋 Copiar</button>
+        <pre id="script-code" style="margin:0;font-size:11px;color:#e2e8f0;overflow-x:auto;font-family:monospace;line-height:1.6;white-space:pre-wrap">const SHEET_NAME = 'Fichas';
+
+function doPost(e) {
+  try {
+    const data = JSON.parse(e.postData.contents);
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const sheet = ss.getSheetByName(SHEET_NAME);
+
+    if (data.action === 'salvarFicha') {
+      const f = data.ficha;
+      const comps = (f.competencias||[]).map(c=>c.nome+':'+c.val).join('|');
+      sheet.appendRow([
+        f.id, f.nome, f.cargo, f.cbo, f.cboTitulo, f.depto,
+        f.dataAdmissao, f.entrevistador, f.dataEntrevista,
+        f.nivel, f.autonomia, f.formacao, f.experiencia, f.idiomas,
+        f.atribuicoesCompete, f.atribuicoesAlem, f.atribuicoesNaoFaz,
+        f.atividades, f.frequencia, f.cargaHoraria,
+        f.responsabilidades, comps,
+        f.pontosFortes, f.areasDesenvolvimento, f.expectativaCarreira,
+        f.interesse, f.disponibilidade,
+        f.data, f.status, '', '', ''
+      ]);
+    }
+
+    if (data.action === 'atualizarFicha') {
+      const sheet = ss.getSheetByName(SHEET_NAME);
+      const rows = sheet.getDataRange().getValues();
+      for (let i = 1; i < rows.length; i++) {
+        if (String(rows[i][0]) === String(data.id)) {
+          const campos = data.campos;
+          const col = {
+            status: 29, pdi: 30, prazoCtrl: 31, obsRH: 32
+          };
+          for (const [k, v] of Object.entries(campos)) {
+            if (col[k]) sheet.getRange(i+1, col[k]).setValue(v);
+          }
+          break;
+        }
+      }
+    }
+
+    return ContentService
+      .createTextOutput(JSON.stringify({ok:true}))
+      .setMimeType(ContentService.MimeType.JSON);
+  } catch(err) {
+    return ContentService
+      .createTextOutput(JSON.stringify({ok:false,error:err.message}))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
+function doGet(e) {
+  if (e.parameter.action === 'listarFichas') {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const sheet = ss.getSheetByName(SHEET_NAME);
+    const rows = sheet.getDataRange().getValues();
+    const fichas = [];
+    for (let i = 1; i < rows.length; i++) {
+      const r = rows[i];
+      if (!r[0]) continue;
+      const comps = String(r[21]||'').split('|').filter(Boolean).map(c=>{
+        const [nome,val] = c.split(':');
+        return {nome, val:parseInt(val)||0};
+      });
+      fichas.push({
+        id:String(r[0]), nome:r[1], cargo:r[2], cbo:r[3], cboTitulo:r[4],
+        depto:r[5], dataAdmissao:r[6], entrevistador:r[7], dataEntrevista:r[8],
+        nivel:r[9], autonomia:r[10], formacao:r[11], experiencia:r[12], idiomas:r[13],
+        atribuicoesCompete:r[14], atribuicoesAlem:r[15], atribuicoesNaoFaz:r[16],
+        atividades:r[17], frequencia:r[18], cargaHoraria:r[19],
+        responsabilidades:r[20], competencias:comps,
+        pontosFortes:r[22], areasDesenvolvimento:r[23], expectativaCarreira:r[24],
+        interesse:r[25], disponibilidade:r[26],
+        data:r[27], status:r[28]||'novo', pdi:r[29]||'',
+        prazoCtrl:r[30]||'', obsRH:r[31]||''
+      });
+    }
+    return ContentService
+      .createTextOutput(JSON.stringify(fichas))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+}</pre>
+      </div>
+
+      <p style="font-weight:700;margin-bottom:8px">PASSO 3 — Publicar como webapp</p>
+      <ol style="padding-left:1.2rem;margin-bottom:1rem">
+        <li>Clique em <strong>Implantar → Nova implantação</strong></li>
+        <li>Tipo: <strong>Aplicativo da Web</strong></li>
+        <li>Executar como: <strong>Eu (seu e-mail)</strong></li>
+        <li>Quem pode acessar: <strong>Qualquer pessoa</strong></li>
+        <li>Clique em <strong>Implantar</strong> → autorize → copie a URL gerada</li>
+      </ol>
+
+      <p style="font-weight:700;margin-bottom:8px">PASSO 4 — Colar a URL no sistema</p>
+      <div style="display:flex;gap:8px;margin-bottom:1rem">
+        <input type="text" id="input-url" placeholder="Cole aqui a URL do Apps Script..." style="flex:1;padding:9px 12px;border:1.5px solid #e5e7eb;border-radius:8px;font-size:13px;font-family:inherit">
+        <button onclick="salvarURL()" style="padding:9px 18px;background:#1a56db;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer">Salvar</button>
+      </div>
+      <div id="url-status" style="font-size:12px;color:#6b7280"></div>
+
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── BANCO CBO LOCAL — CARGOS DA EMPRESA 2025/2026 ──
+const CBO_LOCAL = {
+  // ── ADMINISTRATIVO / BACKOFFICE ──
+  "411005": { titulo:"Auxiliar Administrativo", descricao:"Executa tarefas administrativas operacionais de suporte às rotinas de escritório, controlando documentos, atendendo solicitações internas e alimentando sistemas de informação.", atribuicoes:["Organizar e arquivar documentos físicos e digitais","Atender telefone e direcionar chamadas internas","Alimentar planilhas e sistemas de controle","Emitir documentos, formulários e relatórios básicos","Apoiar os setores nas rotinas administrativas","Controlar estoque de materiais de escritório"] },
+  "411010": { titulo:"Assistente Administrativo", descricao:"Presta suporte administrativo com maior autonomia, elaborando relatórios, controlando processos e apoiando as áreas de gestão em suas rotinas.", atribuicoes:["Elaborar e enviar correspondências e relatórios","Organizar agendas e reuniões das lideranças","Controlar contratos, documentos e prazos","Realizar cotações e apoiar o setor de compras","Atender clientes e fornecedores internos","Apoiar atividades de RH, financeiro e contábil"] },
+  "252305": { titulo:"Analista Administrativo", descricao:"Analisa processos administrativos, elabora relatórios gerenciais e propõe melhorias de eficiência operacional nas rotinas da empresa.", atribuicoes:["Analisar e otimizar processos administrativos","Elaborar relatórios e indicadores de desempenho","Controlar orçamentos e despesas do setor","Mapear e documentar fluxos de trabalho","Apoiar implementação de melhorias de processos","Dar suporte à tomada de decisão gerencial"] },
+  "141410": { titulo:"Coordenador Administrativo", descricao:"Coordena equipes e processos administrativos, garantindo eficiência operacional, controle de recursos e alinhamento com as diretrizes estratégicas.", atribuicoes:["Coordenar equipes administrativas e distribuir atividades","Controlar orçamentos e despesas do setor","Implementar e monitorar processos e procedimentos","Elaborar relatórios gerenciais para a diretoria","Negociar com fornecedores e prestadores de serviço","Garantir conformidade com normas e políticas internas"] },
+  "142105": { titulo:"Gerente Administrativo", descricao:"Planeja, dirige e controla as atividades administrativas da organização, gerenciando equipes, recursos e processos para garantir eficiência e resultados.", atribuicoes:["Planejar e gerir as rotinas administrativas","Supervisionar equipes e garantir atingimento de metas","Controlar orçamento e indicadores do setor","Implementar melhorias de processos e governança","Representar a área em reuniões estratégicas","Assegurar conformidade legal e regulatória"] },
+  // ── FINANCEIRO ──
+  "411005_fin": { titulo:"Auxiliar Financeiro", descricao:"Apoia as rotinas financeiras com lançamentos, conciliações e controle de documentos fiscais sob supervisão do responsável pela área.", atribuicoes:["Realizar lançamentos financeiros no sistema","Conciliar extratos bancários e contas a pagar/receber","Organizar documentos fiscais e notas fiscais","Controlar contas a pagar e receber","Auxiliar no fechamento financeiro mensal","Emitir boletos e relatórios financeiros básicos"] },
+  "411010_fin": { titulo:"Assistente Financeiro", descricao:"Executa atividades financeiras com autonomia crescente, apoiando o controle do fluxo de caixa e a gestão de contas.", atribuicoes:["Controlar contas a pagar e a receber","Acompanhar o fluxo de caixa diário","Conciliar extratos e realizar baixas financeiras","Elaborar relatórios de inadimplência e cobrança","Apoiar no fechamento financeiro e provisões","Atender fornecedores e clientes em demandas financeiras"] },
+  "252515": { titulo:"Analista Financeiro", descricao:"Analisa indicadores financeiros, controla o fluxo de caixa, elabora relatórios e apoia o planejamento e as decisões financeiras da organização.", atribuicoes:["Analisar e controlar o fluxo de caixa","Elaborar relatórios financeiros e de DRE","Realizar projeções e análises de rentabilidade","Conciliar contas e garantir integridade dos dados","Apoiar o planejamento orçamentário","Propor melhorias nos processos financeiros"] },
+  "121005": { titulo:"Coordenador Financeiro", descricao:"Coordena a gestão financeira da empresa, supervisionando controles, equipes e processos para garantir saúde financeira e conformidade.", atribuicoes:["Supervisionar equipe financeira e distribuir demandas","Controlar fluxo de caixa, contas a pagar e receber","Elaborar relatórios e indicadores financeiros","Acompanhar orçamentos e desvios","Apoiar a gestão de riscos e compliance financeiro","Apresentar resultados à diretoria"] },
+  "121010": { titulo:"Gerente Adm. Financeiro", descricao:"Dirige as áreas administrativas e financeiras, garantindo eficiência operacional, controle orçamentário e alinhamento com a estratégia empresarial.", atribuicoes:["Planejar e controlar orçamento da empresa","Gerir equipes de finanças e administração","Analisar demonstrativos financeiros e indicadores","Definir políticas financeiras e de controle interno","Negociar crédito, financiamentos e seguros","Reportar resultados e projeções à diretoria"] },
+  // ── RH / DP ──
+  "411005_rh": { titulo:"Auxiliar de RH", descricao:"Apoia as rotinas de recursos humanos com atividades de arquivo, cadastro, controle de documentos e atendimento aos colaboradores.", atribuicoes:["Organizar e arquivar documentos de pessoal","Auxiliar no processo de admissão e demissão","Controlar ponto eletrônico e folha de frequência","Atender colaboradores em demandas básicas de RH","Apoiar eventos e comunicações internas","Atualizar cadastros no sistema de RH"] },
+  "411005_dp": { titulo:"Auxiliar de DP", descricao:"Executa rotinas de departamento pessoal, como controle de ponto, apuração de frequência e organização de documentos trabalhistas.", atribuicoes:["Apurar e lançar frequências no sistema","Auxiliar na elaboração da folha de pagamento","Organizar documentos de admissão e demissão","Controlar benefícios e vales dos colaboradores","Emitir guias de tributos trabalhistas","Atender colaboradores em dúvidas sobre DP"] },
+  "411010_rh": { titulo:"Assistente de RH", descricao:"Executa processos de RH com maior responsabilidade, apoiando recrutamento, treinamento, benefícios e comunicação interna.", atribuicoes:["Conduzir triagem e entrevistas iniciais de R&S","Organizar programas de integração de novos colaboradores","Controlar indicadores básicos de RH","Apoiar ações de T&D e eventos corporativos","Administrar benefícios e solicitações dos colaboradores","Elaborar comunicados e relatórios de RH"] },
+  "411010_dp": { titulo:"Assistente de DP", descricao:"Apoia as rotinas de folha de pagamento, encargos trabalhistas e manutenção de registros de pessoal com precisão e cumprimento de prazos.", atribuicoes:["Processar admissões, demissões e rescisões","Lançar e revisar informações da folha de pagamento","Calcular férias, 13º salário e verbas rescisórias","Controlar e lançar benefícios e descontos","Emitir eSocial e obrigações acessórias","Atender auditorias e fiscalizações trabalhistas"] },
+  "252405": { titulo:"Analista de RH Generalista", descricao:"Planeja e executa políticas e processos de gestão de pessoas, abrangendo recrutamento, T&D, remuneração, clima e relações trabalhistas.", atribuicoes:["Conduzir processos completos de R&S","Implementar programas de T&D e avaliação","Administrar benefícios e remuneração","Elaborar indicadores e relatórios de RH","Apoiar gestores em temas de gestão de pessoas","Garantir conformidade com legislação trabalhista"] },
+  "252405_dp": { titulo:"Analista de DP", descricao:"Gerencia as rotinas de departamento pessoal com autonomia, garantindo a correta apuração da folha e cumprimento das obrigações trabalhistas.", atribuicoes:["Elaborar e conferir folha de pagamento","Calcular e processar rescisões e férias","Enviar obrigações acessórias (eSocial, SEFIP, RAIS)","Gerenciar contratos de trabalho e documentos de pessoal","Orientar gestores e colaboradores em questões trabalhistas","Auditar e garantir conformidade legal do DP"] },
+  "142305": { titulo:"Coordenador de RH/DP", descricao:"Coordena as atividades de recursos humanos e departamento pessoal, liderando equipes e garantindo a entrega dos processos com qualidade e conformidade.", atribuicoes:["Supervisionar equipe de RH e DP","Garantir conformidade dos processos trabalhistas","Coordenar recrutamento, T&D e avaliações","Elaborar relatórios e indicadores da área","Apoiar a diretoria em decisões de pessoas","Implementar melhorias nos processos de RH/DP"] },
+  "142310": { titulo:"Gerente de RH/DP", descricao:"Dirige as políticas e estratégias de gestão de pessoas e departamento pessoal, alinhando as práticas de RH aos objetivos organizacionais.", atribuicoes:["Definir e implementar políticas de gestão de pessoas","Liderar equipes de RH e DP","Planejar quadro de pessoal e orçamento da área","Gerenciar relações sindicais e negociações coletivas","Desenvolver cultura e clima organizacional","Reportar indicadores de RH à diretoria"] },
+  // ── CONTABILIDADE ──
+  "422105": { titulo:"Auxiliar Contábil", descricao:"Realiza lançamentos e conciliações contábeis básicas, organiza documentos fiscais e apoia o fechamento contábil sob supervisão.", atribuicoes:["Realizar lançamentos contábeis no sistema","Conciliar contas bancárias e balancetes","Organizar notas fiscais e documentos contábeis","Auxiliar na apuração de impostos","Emitir relatórios contábeis básicos","Apoiar no fechamento contábil mensal"] },
+  "413110": { titulo:"Assistente Contábil", descricao:"Executa rotinas contábeis com autonomia crescente, participando do fechamento, apuração fiscal e elaboração de demonstrações.", atribuicoes:["Lançar e conciliar contas do plano contábil","Apurar impostos e obrigações fiscais","Auxiliar na elaboração de balanço e DRE","Emitir e conferir obrigações acessórias","Controlar depreciações e provisões","Apoiar auditorias internas e externas"] },
+  "252210": { titulo:"Analista Contábil", descricao:"Executa e supervisiona rotinas contábeis, fiscais e tributárias, garantindo a conformidade das demonstrações e o cumprimento das obrigações legais.", atribuicoes:["Elaborar balanço patrimonial e demonstrações financeiras","Apurar e analisar impostos e obrigações fiscais","Entregar obrigações acessórias (SPED, ECF, ECD)","Realizar análise de contas e conciliações","Orientar sobre planejamento tributário","Apoiar auditorias e due diligences"] },
+  "121105": { titulo:"Coordenador Contábil", descricao:"Coordena a equipe e os processos contábeis da empresa, garantindo a precisão das informações e conformidade com normas e legislação vigentes.", atribuicoes:["Supervisionar equipe contábil e fiscalizar lançamentos","Garantir entrega tempestiva das obrigações legais","Coordenar fechamento contábil mensal e anual","Analisar demonstrações financeiras e indicadores","Implementar melhorias de processos contábeis","Apoiar auditorias externas e fiscais"] },
+  "121110": { titulo:"Gerente Contábil", descricao:"Dirige as operações contábeis, fiscais e tributárias da organização, sendo responsável pela integridade das informações e pela estratégia tributária.", atribuicoes:["Planejar e supervisionar todas as rotinas contábeis","Definir estratégias tributárias e de compliance","Apresentar demonstrações à diretoria e auditores","Gerenciar equipe contábil e fiscal","Relacionar-se com auditores, sócios e órgãos reguladores","Garantir conformidade com normas contábeis e fiscais"] },
+  // ── COMPRAS ──
+  "411005_cmp": { titulo:"Auxiliar de Compras", descricao:"Apoia as rotinas do setor de compras com cotações, controle de pedidos e organização de documentos de fornecedores.", atribuicoes:["Realizar cotações com fornecedores","Controlar pedidos e prazos de entrega","Organizar documentos de fornecedores e contratos","Alimentar sistemas de compras","Apoiar no controle de estoque e abastecimento","Emitir relatórios básicos de compras"] },
+  "411010_cmp": { titulo:"Assistente de Compras", descricao:"Executa processos de compras com autonomia, negociando com fornecedores e garantindo abastecimento conforme necessidades da empresa.", atribuicoes:["Negociar preços e condições com fornecedores","Emitir e acompanhar pedidos de compras","Avaliar e homologar fornecedores","Controlar cronograma de entregas e pendências","Elaborar relatórios de desempenho de fornecedores","Apoiar o planejamento de necessidades de compra"] },
+  "252705": { titulo:"Analista de Compras", descricao:"Analisa demandas de compras, desenvolve fornecedores e implementa estratégias para redução de custos e melhoria do processo de suprimentos.", atribuicoes:["Analisar e consolidar requisições de compras","Desenvolver e avaliar base de fornecedores","Negociar contratos e acordos comerciais","Elaborar indicadores de compras e savings","Implementar processos de compras estratégicas","Garantir conformidade nas aquisições"] },
+  "141205": { titulo:"Coordenador de Compras", descricao:"Coordena a equipe e os processos de compras, garantindo eficiência, redução de custos e conformidade nos processos de aquisição.", atribuicoes:["Supervisionar equipe e processos de compras","Planejar compras estratégicas e táticas","Negociar contratos de alto valor","Implementar política de homologação de fornecedores","Controlar orçamento e indicadores de compras","Reportar resultados à gerência"] },
+  "141210": { titulo:"Gerente de Compras", descricao:"Dirige a área de suprimentos e compras estratégicas, desenvolvendo fornecedores, gerenciando custos e alinhando as aquisições com a estratégia da empresa.", atribuicoes:["Definir estratégias de suprimento e aquisição","Liderar negociações de alto impacto","Gerenciar base de fornecedores estratégicos","Controlar orçamento e metas da área","Alinhar compras com operações e finanças","Reportar indicadores e resultados à diretoria"] },
+  // ── JURÍDICO / COMERCIAL ──
+  "241205": { titulo:"Analista Jurídico", descricao:"Analisa e elabora documentos jurídicos, acompanha processos e assessora a empresa em questões legais e contratuais.", atribuicoes:["Analisar e elaborar contratos e documentos jurídicos","Acompanhar processos judiciais e administrativos","Pesquisar legislação e jurisprudência","Emitir pareceres e notas jurídicas","Apoiar negociações e resolução de conflitos","Garantir conformidade legal das operações"] },
+  "141305": { titulo:"Coordenador Jurídico", descricao:"Coordena as atividades jurídicas da empresa, gerenciando contratos, processos e garantindo conformidade legal em todas as áreas.", atribuicoes:["Supervisionar contratos e documentos legais","Coordenar acompanhamento de processos judiciais","Orientar as áreas sobre questões legais","Gerenciar relacionamento com escritórios externos","Elaborar políticas de compliance","Reportar riscos jurídicos à diretoria"] },
+  "141310": { titulo:"Gerente Jurídico", descricao:"Dirige o departamento jurídico, definindo estratégia legal, gerenciando riscos e garantindo conformidade regulatória da organização.", atribuicoes:["Definir estratégia jurídica da empresa","Gerenciar equipe jurídica interna e externa","Representar a empresa em negociações complexas","Garantir compliance e gestão de riscos legais","Aprovar contratos e documentos de alto impacto","Reportar à diretoria sobre riscos e litígios"] },
+  "252605": { titulo:"Analista Comercial", descricao:"Analisa dados de vendas, desenvolve estratégias comerciais e apoia a equipe de vendas com informações e processos.", atribuicoes:["Analisar indicadores e resultados de vendas","Elaborar relatórios e dashboards comerciais","Apoiar no planejamento de metas e estratégias","Controlar CRM e pipeline de oportunidades","Identificar tendências de mercado","Apoiar a equipe de vendas com dados e processos"] },
+  "142330": { titulo:"Analista de Licitação", descricao:"Identifica oportunidades, prepara e acompanha processos licitatórios, garantindo conformidade com a legislação e maximizando chances de sucesso.", atribuicoes:["Pesquisar e monitorar editais de licitação","Elaborar propostas técnicas e comerciais","Analisar documentação exigida em editais","Acompanhar julgamentos e recursos","Controlar prazos e documentação de habilitação","Manter cadastros e certidões atualizados"] },
+  "252405_com": { titulo:"Assistente Comercial", descricao:"Apoia as atividades comerciais com atendimento a clientes, controle de pedidos e suporte à equipe de vendas.", atribuicoes:["Atender clientes e registrar pedidos","Apoiar vendedores com propostas e cotações","Controlar carteira de pedidos e prazos","Emitir relatórios de vendas e clientes","Manter CRM atualizado com informações de clientes","Apoiar ações de pós-venda e fidelização"] },
+  // ── SECRETARIA ──
+  "422205_sec": { titulo:"Secretário(a)", descricao:"Presta suporte executivo de alto nível à diretoria, gerenciando agenda, comunicações e processos administrativos estratégicos.", atribuicoes:["Gerenciar agenda e compromissos da diretoria","Organizar viagens, eventos e reuniões executivas","Redigir correspondências e comunicações formais","Receber e encaminhar visitantes e contatos externos","Controlar documentos e informações confidenciais","Apoiar projetos estratégicos da diretoria"] },
+  // ── OPERACIONAL / GRÁFICA ──
+  "766315": { titulo:"Auxiliar de Acabamento", descricao:"Executa operações de acabamento gráfico como dobrar, cortar, colar e embalar materiais impressos, garantindo a qualidade visual dos produtos.", atribuicoes:["Realizar operações manuais de dobra e corte","Embalar e organizar materiais impressos","Verificar qualidade visual dos produtos","Operar guilhotinas e dobradeiras sob supervisão","Separar e conferir materiais por pedido","Manter área de trabalho organizada e limpa"] },
+  "766215": { titulo:"Impressor de Offset", descricao:"Opera impressoras offset para produção de materiais gráficos, ajustando parâmetros de impressão e garantindo qualidade colorimétrica.", atribuicoes:["Preparar e operar máquinas de impressão offset","Ajustar registro de cores e parâmetros de impressão","Realizar prova de impressão e aprovação de cor","Controlar qualidade da impressão durante a produção","Realizar manutenção básica dos equipamentos","Registrar dados de produção e consumo"] },
+  "766215_an": { titulo:"Analista de Offset", descricao:"Supervisiona e otimiza processos de impressão offset, garantindo padrão de qualidade, eficiência produtiva e resolução de problemas técnicos.", atribuicoes:["Supervisionar operação de máquinas de impressão","Otimizar parâmetros de cor e registro","Analisar e resolver falhas técnicas de impressão","Controlar consumo de insumos e custos","Treinar operadores e auxiliares","Elaborar relatórios de produção e qualidade"] },
+  "766315_an": { titulo:"Analista de Acabamento", descricao:"Coordena e otimiza operações de acabamento gráfico, garantindo qualidade, prazo e eficiência no processamento dos materiais impressos.", atribuicoes:["Planejar e distribuir atividades de acabamento","Controlar qualidade dos produtos acabados","Operar equipamentos de acabamento complexos","Resolver problemas técnicos de acabamento","Elaborar relatórios de produção e perdas","Treinar equipe de auxiliares"] },
+  "766315_sup": { titulo:"Supervisor de Acabamento", descricao:"Gerencia a equipe e os processos de acabamento gráfico, assegurando cumprimento de prazos, qualidade e eficiência operacional.", atribuicoes:["Planejar e gerenciar a produção de acabamento","Supervisionar equipe e distribuir demandas","Garantir qualidade e conformidade dos produtos","Controlar custos e indicadores de produção","Implementar melhorias de processo","Reportar resultados à gerência"] },
+  "766215_sup": { titulo:"Supervisor de Gráfica Offset", descricao:"Gerencia as operações de impressão offset, liderando equipes técnicas e garantindo padrão de qualidade e volume de produção.", atribuicoes:["Supervisionar operação de impressão offset","Planejar e sequenciar a produção","Garantir padrão colorimétrico e de qualidade","Controlar consumo de papel, tinta e insumos","Gerenciar equipe técnica de impressão","Reportar indicadores à gerência"] },
+  // ── LIMPEZA ──
+  "514320": { titulo:"Faxineiro / ASG", descricao:"Realiza limpeza e conservação de ambientes, garantindo higiene e organização das instalações conforme rotina estabelecida.", atribuicoes:["Higienizar pisos, paredes e sanitários","Limpar e organizar móveis e superfícies","Recolher e descartar resíduos adequadamente","Lavar e conservar áreas externas","Repor materiais de higiene nos banheiros","Zelar pelos equipamentos e materiais de limpeza"] },
+  "514325": { titulo:"Encarregado de Limpeza", descricao:"Coordena equipe de limpeza e conservação, organizando escalas, controlando insumos e garantindo padrão de higiene nas instalações.", atribuicoes:["Coordenar e supervisionar equipe de limpeza","Planejar escalas e distribuir tarefas","Controlar estoque de produtos de limpeza","Garantir padrão de higiene e qualidade","Treinar novos colaboradores da equipe","Reportar ocorrências ao gestor responsável"] },
+  "514330": { titulo:"Líder de Limpeza", descricao:"Lidera operações de limpeza em múltiplos ambientes, gerenciando equipes maiores e garantindo conformidade com normas de higiene e segurança.", atribuicoes:["Liderar equipes de limpeza e conservação","Planejar operações e escalar profissionais","Controlar qualidade e conformidade dos serviços","Gerenciar insumos e controlar custos","Implementar procedimentos de higienização","Reportar resultados e indicadores ao gestor"] },
+  // ── OBRAS / MANUTENÇÃO ──
+  "710105": { titulo:"Ajudante de Obra / Servente", descricao:"Executa atividades auxiliares em obras de construção civil, apoiando os profissionais qualificados na execução de serviços básicos.", atribuicoes:["Auxiliar pedreiros, carpinteiros e eletricistas","Preparar argamassa, concreto e materiais","Carregar e organizar materiais no canteiro","Realizar serviços de limpeza da obra","Operar ferramentas manuais sob supervisão","Seguir normas de segurança e usar EPIs"] },
+  "710210": { titulo:"Pedreiro", descricao:"Executa serviços de alvenaria, reboco e assentamento em obras de construção civil, conforme projetos e especificações técnicas.", atribuicoes:["Assentar tijolos e blocos em alvenaria","Aplicar reboco e massa em paredes","Executar serviços de contrapiso e regularização","Interpretar plantas e especificações técnicas","Zelar pela qualidade e prumo das estruturas","Cumprir normas de segurança na execução"] },
+  "715505": { titulo:"Eletricista", descricao:"Instala, mantém e repara sistemas elétricos em obras e instalações prediais, seguindo normas técnicas de segurança.", atribuicoes:["Instalar quadros elétricos e circuitos","Passar eletrodutos e cabear instalações","Realizar manutenção elétrica preventiva e corretiva","Testar e verificar sistemas elétricos instalados","Interpretar projetos elétricos","Seguir NR-10 e normas de segurança elétrica"] },
+  "716610": { titulo:"Bombeiro Hidráulico", descricao:"Instala e mantém sistemas hidráulicos prediais, incluindo tubulações, registros e equipamentos sanitários.", atribuicoes:["Instalar tubulações e conexões hidráulicas","Executar instalações de água fria e quente","Realizar manutenção de sistemas hidráulicos","Solucionar vazamentos e avarias","Interpretar projetos hidráulicos","Cumprir normas técnicas e de segurança"] },
+  "716505": { titulo:"Carpinteiro", descricao:"Executa serviços de carpintaria em obras, fabricando e instalando estruturas de madeira conforme projetos e especificações.", atribuicoes:["Executar formas de concreto e estruturas de madeira","Instalar esquadrias, portas e janelas","Fabricar e montar estruturas de telhado","Realizar acabamentos em madeira","Interpretar projetos e especificações técnicas","Operar ferramentas e máquinas de carpintaria"] },
+  "712120": { titulo:"Pintor", descricao:"Executa serviços de pintura em obras e edificações, preparando superfícies e aplicando tinta conforme especificações técnicas e estéticas.", atribuicoes:["Preparar e lixar superfícies para pintura","Aplicar massa corrida, primer e tinta","Executar pinturas internas e externas","Realizar acabamentos especiais e texturas","Controlar consumo de materiais","Cumprir normas de segurança e usar EPIs"] },
+  "715110": { titulo:"Duteiro", descricao:"Instala e mantém sistemas de dutagem para ar-condicionado, ventilação e exaustão em obras e instalações prediais.", atribuicoes:["Instalar dutos de ar-condicionado e ventilação","Executar corte e montagem de chapas","Realizar vedação e isolamento de dutos","Testar e ajustar sistemas de dutagem","Interpretar projetos de climatização","Cumprir normas técnicas e de segurança"] },
+  "711110": { titulo:"Armador", descricao:"Executa serviços de armação de ferragem em obras de construção civil, confeccionando e montando estruturas metálicas conforme projetos.", atribuicoes:["Cortar, dobrar e montar ferros para armação","Montar estruturas de aço conforme projetos","Realizar amarração e espaçamento de armaduras","Conferir bitolas e especificações técnicas","Colaborar com equipes de concretagem","Cumprir normas de segurança na execução"] },
+  "514310": { titulo:"Auxiliar de Manutenção Predial", descricao:"Realiza serviços gerais de manutenção preventiva e corretiva em instalações prediais, atendendo solicitações dos setores.", atribuicoes:["Executar reparos básicos elétricos e hidráulicos","Realizar pinturas e pequenos serviços de alvenaria","Manter jardins e áreas externas","Instalar e reparar mobiliários e equipamentos","Registrar e reportar ocorrências de manutenção","Cumprir normas de segurança nos serviços"] },
+  "620105": { titulo:"Encarregado de Manutenção", descricao:"Coordena a equipe de manutenção predial, planejando serviços, controlando insumos e garantindo a conservação das instalações.", atribuicoes:["Coordenar equipe de manutenção predial","Planejar e priorizar ordens de serviço","Controlar materiais e ferramentas","Garantir qualidade dos serviços executados","Elaborar relatórios de manutenção","Assegurar cumprimento das normas de segurança"] },
+  "620110": { titulo:"Encarregado de Instalação", descricao:"Coordena equipes de instalação elétrica, hidráulica e de dutagem, garantindo execução conforme projetos e normas técnicas.", atribuicoes:["Coordenar equipes de instalações prediais","Interpretar e distribuir projetos técnicos","Controlar qualidade e conformidade da execução","Gerenciar materiais e cronograma","Garantir cumprimento de normas técnicas","Reportar andamento das obras ao supervisor"] },
+  "620115": { titulo:"Encarregado de Obras", descricao:"Gerencia equipes e frentes de obra, coordenando a execução conforme cronograma, qualidade e normas de segurança.", atribuicoes:["Coordenar múltiplas equipes no canteiro","Controlar cronograma e produtividade","Garantir qualidade de execução conforme projeto","Gerenciar materiais e equipamentos de obra","Elaborar relatórios de andamento","Assegurar cumprimento das normas de SST"] },
+  "620120": { titulo:"Encarregado de Armação", descricao:"Supervisiona equipes de armação de ferragem, controlando execução, qualidade e consumo de materiais metálicos.", atribuicoes:["Supervisionar equipe de armadores","Distribuir atividades e controlar produtividade","Garantir qualidade das armações executadas","Controlar estoque e consumo de ferragem","Interpretar projetos estruturais","Cumprir e exigir normas de segurança"] },
+  "620125": { titulo:"Contramestre", descricao:"Auxilia o mestre de obras na coordenação geral do canteiro, supervisionando múltiplas equipes e frentes de trabalho.", atribuicoes:["Auxiliar o mestre de obras na coordenação","Supervisionar equipes e frentes de trabalho","Controlar produtividade e qualidade","Organizar entrada e saída de materiais","Registrar ocorrências e relatórios diários","Garantir cumprimento das normas de segurança"] },
+  "710205": { titulo:"Mestre de Obras", descricao:"Dirige a execução geral da obra, coordenando todas as equipes e frentes de trabalho, garantindo prazo, qualidade, segurança e conformidade técnica.", atribuicoes:["Dirigir e coordenar todas as equipes da obra","Planejar sequências e cronogramas de execução","Garantir qualidade e conformidade técnica","Gerenciar materiais, equipamentos e terceiros","Elaborar relatórios de avanço físico","Assegurar cumprimento das normas de SST"] },
+  "621005": { titulo:"Almoxarife", descricao:"Controla a entrada, saída e estoque de materiais em obras ou almoxarifados, garantindo organização e rastreabilidade dos itens.", atribuicoes:["Receber e conferir materiais e notas fiscais","Organizar e endereçar itens no estoque","Controlar saídas com requisições","Realizar inventário periódico","Elaborar relatórios de movimentação","Reportar divergências e avarias ao supervisor"] },
+  "621010": { titulo:"Supervisor de Almoxarife", descricao:"Supervisiona o controle de materiais e estoque em obras, gerenciando equipe e processos de almoxarifado para garantir eficiência e rastreabilidade.", atribuicoes:["Supervisionar equipe e rotinas do almoxarifado","Controlar e otimizar nível de estoque","Garantir rastreabilidade de materiais","Negociar devoluções e ajustar inventários","Elaborar relatórios e indicadores de estoque","Implementar melhorias no processo de almoxarifado"] },
+  "712210": { titulo:"Apontador", descricao:"Registra a frequência, produtividade e ocorrências dos colaboradores em canteiros de obra, apoiando a gestão de pessoas no campo.", atribuicoes:["Registrar ponto e frequência dos colaboradores","Lançar dados de produtividade por equipe","Controlar afastamentos e substituições","Apoiar o DP com informações do canteiro","Elaborar relatórios diários de mão de obra","Comunicar ocorrências ao encarregado e ao RH"] },
+  "710305": { titulo:"Vigia", descricao:"Realiza a vigilância de instalações, controlando acesso e garantindo segurança do patrimônio e dos colaboradores.", atribuicoes:["Controlar acesso de pessoas e veículos","Realizar rondas periódicas na área","Registrar ocorrências no livro de controle","Acionar responsáveis em situações de emergência","Verificar identificação de visitantes","Zelar pela segurança das instalações"] },
+  // ── TÉCNICO ──
+  "322205": { titulo:"Técnico de Segurança do Trabalho", descricao:"Promove saúde e segurança no trabalho, identificando riscos, elaborando documentos legais e treinando equipes.", atribuicoes:["Identificar e avaliar riscos nos ambientes","Elaborar PGR, PCMSO e documentos de SST","Treinar colaboradores em normas de segurança","Investigar acidentes e propor melhorias","Garantir uso correto de EPIs","Relacionar-se com fiscalização do trabalho"] },
+  "314120": { titulo:"Assessor Técnico", descricao:"Presta assessoria técnica especializada em produtos, processos ou projetos, apoiando equipes comerciais e clientes com conhecimento técnico aprofundado.", atribuicoes:["Assessorar clientes e equipes em questões técnicas","Elaborar especificações e laudos técnicos","Apoiar apresentações e demonstrações de produtos","Analisar problemas técnicos e propor soluções","Elaborar relatórios e documentação técnica","Participar de visitas e reuniões com clientes"] },
+  "313110": { titulo:"Técnico em Eletrotécnica", descricao:"Instala, mantém e opera sistemas elétricos industriais e prediais, garantindo funcionamento seguro e eficiente.", atribuicoes:["Instalar e manter sistemas elétricos industriais","Realizar manutenção preventiva e corretiva","Testar e calibrar equipamentos elétricos","Elaborar laudos e relatórios técnicos","Interpretar projetos e diagramas elétricos","Cumprir NR-10 e normas de segurança"] },
+  "311010": { titulo:"Técnico em Edificações", descricao:"Auxilia na elaboração e execução de projetos de obras civis, realizando levantamentos, orçamentos e acompanhamento de execução.", atribuicoes:["Elaborar e interpretar projetos de edificações","Acompanhar execução de obras conforme projetos","Realizar medições e levantamentos quantitativos","Elaborar orçamentos e memoriais descritivos","Apoiar engenheiros e arquitetos nos projetos","Controlar qualidade de materiais e execução"] },
+  "314105": { titulo:"Técnico de Qualidade", descricao:"Implementa e monitora processos de controle de qualidade, garantindo conformidade dos produtos e serviços com especificações técnicas.", atribuicoes:["Inspecionar produtos e processos de produção","Realizar testes e ensaios de controle de qualidade","Elaborar relatórios de não conformidade","Propor ações corretivas e preventivas","Implementar ferramentas de gestão da qualidade","Treinar equipes em procedimentos de qualidade"] },
+  // ── LABORATÓRIO / BIOMÉDICO ──
+  "221205": { titulo:"Biomédico(a)", descricao:"Realiza análises clínicas, pesquisas e assessoria técnico-científica em laboratórios, instituições de saúde e empresas do setor médico-hospitalar.", atribuicoes:["Realizar análises clínicas e laboratoriais","Elaborar laudos técnicos e relatórios científicos","Assessorar em produtos e equipamentos médico-hospitalares","Desenvolver e validar métodos analíticos","Garantir controle de qualidade analítico","Treinar e orientar equipes técnicas de laboratório"] },
+  "324205": { titulo:"Técnico em Laboratório", descricao:"Executa procedimentos laboratoriais sob supervisão técnica, realizando análises, preparando amostras e mantendo equipamentos.", atribuicoes:["Preparar e analisar amostras conforme protocolos","Operar equipamentos e instrumentos laboratoriais","Realizar controle de qualidade das análises","Registrar resultados e elaborar relatórios","Manter laboratório organizado e em conformidade","Zelar pela biossegurança e manutenção dos equipamentos"] },
+  "131205": { titulo:"Assessor Científico / Supervisor Técnico e Científico", descricao:"Presta consultoria científica e técnica especializada, apoiando equipes comerciais e clientes com conhecimento aprofundado em produtos e aplicações.", atribuicoes:["Assessorar clientes em aplicações científicas e técnicas","Elaborar laudos, apresentações e treinamentos técnicos","Apoiar processos de registro e certificação","Desenvolver parceiras com instituições científicas","Acompanhar tendências e inovações do setor","Participar de congressos e eventos científicos"] },
+  // ── ENGENHARIA ──
+  "214105": { titulo:"Arquiteto Júnior", descricao:"Elabora e desenvolve projetos arquitetônicos sob supervisão, aplicando conceitos técnicos e criativos na concepção de edificações.", atribuicoes:["Elaborar projetos arquitetônicos e complementares","Desenvolver plantas, cortes e detalhamentos","Acompanhar execução conforme projetos","Realizar vistorias técnicas em obras","Elaborar memoriais descritivos e especificações","Apoiar clientes e equipes técnicas"] },
+  "214110": { titulo:"Engenheiro Júnior", descricao:"Desenvolve atividades de engenharia sob supervisão, aplicando conhecimentos técnicos em projetos e obras.", atribuicoes:["Elaborar projetos técnicos de engenharia","Acompanhar execução de obras e instalações","Realizar inspeções e ensaios técnicos","Elaborar memoriais e especificações técnicas","Apoiar gestão de contratos técnicos","Garantir conformidade com normas técnicas"] },
+  "214115": { titulo:"Engenheiro Pleno", descricao:"Planeja e gerencia projetos e obras com autonomia, assumindo responsabilidade técnica pelas entregas.", atribuicoes:["Gerenciar projetos e obras de média complexidade","Elaborar e revisar projetos técnicos","Coordenar equipes técnicas e subcontratados","Controlar prazos, custos e qualidade","Emitir ARTs e assumir responsabilidade técnica","Relacionar-se com clientes e órgãos reguladores"] },
+  "214120": { titulo:"Engenheiro Sênior", descricao:"Lidera projetos e obras complexas, assumindo responsabilidade técnica integral e orientando equipes menos experientes.", atribuicoes:["Liderar projetos e obras de alta complexidade","Definir soluções técnicas inovadoras","Orientar e desenvolver equipes técnicas","Gerir múltiplos contratos e clientes","Garantir conformidade técnica e legal","Reportar resultados à diretoria e clientes"] },
+  "214125": { titulo:"Engenheiro Master", descricao:"Dirige a área técnica de engenharia, definindo estratégias, desenvolvendo negócios e garantindo excelência técnica em todos os projetos.", atribuicoes:["Definir estratégias técnicas e de negócio","Liderar equipes sênior de engenharia","Desenvolver e fidelizar clientes estratégicos","Garantir excelência técnica e inovação","Representar a empresa em fóruns técnicos","Reportar resultados e tendências à diretoria"] },
+  "214130": { titulo:"Assistente Técnico de Arquitetura", descricao:"Apoia arquitetos na elaboração de projetos, desenvolvendo desenhos técnicos, maquetes e documentação de projetos arquitetônicos.", atribuicoes:["Elaborar plantas e desenhos técnicos de arquitetura","Desenvolver detalhamentos e especificações","Realizar maquetes físicas e digitais","Organizar documentação de projetos","Apoiar em visitas técnicas e vistorias","Auxiliar na compatibilização de projetos"] },
+  "214135": { titulo:"Assistente de Engenharia", descricao:"Apoia engenheiros na elaboração de projetos e acompanhamento de obras, realizando levantamentos, cálculos e documentação técnica.", atribuicoes:["Auxiliar na elaboração de projetos técnicos","Realizar levantamentos de campo e quantitativos","Elaborar orçamentos e planilhas técnicas","Acompanhar obras e registrar progresso","Organizar documentação técnica do projeto","Apoiar na relação com clientes e fornecedores"] },
+  // ── DIRETORIA ──
+  "123105": { titulo:"Diretor Administrativo / Executivo", descricao:"Dirige as operações estratégicas e administrativas da organização, garantindo eficiência, crescimento e conformidade com os objetivos dos sócios.", atribuicoes:["Definir estratégias e diretrizes organizacionais","Coordenar diretores e gerentes das áreas","Garantir atingimento das metas empresariais","Representar a empresa perante sócios e stakeholders","Tomar decisões de alto impacto estratégico","Assegurar saúde financeira e operacional da empresa"] },
+  "141105": { titulo:"Diretor Executivo", descricao:"Dirige a empresa em sua totalidade, definindo visão, estratégia e cultura organizacional, sendo responsável pelos resultados globais.", atribuicoes:["Definir visão, missão e estratégia da empresa","Coordenar toda a liderança executiva","Representar a empresa externamente","Garantir crescimento sustentável do negócio","Tomar decisões de investimento e expansão","Responder aos sócios e conselho pelos resultados"] },
+  // ── OUTROS ──
+  "513205": { titulo:"Cozinheiro(a)", descricao:"Prepara refeições e alimentos conforme cardápios e normas de higiene e segurança alimentar.", atribuicoes:["Preparar refeições conforme cardápio planejado","Controlar qualidade e validade dos alimentos","Garantir higiene e limpeza da cozinha","Controlar estoque de ingredientes","Cumprir normas de vigilância sanitária","Planejar e sugerir cardápios"] },
+  "513505": { titulo:"Auxiliar de Cozinha", descricao:"Apoia o cozinheiro nas atividades de preparo de alimentos, higienização de utensílios e organização da cozinha.", atribuicoes:["Auxiliar no preparo de alimentos","Higienizar utensílios e equipamentos","Organizar e armazenar ingredientes","Realizar pré-preparo de alimentos","Manter a cozinha limpa e organizada","Cumprir normas de higiene e segurança alimentar"] },
+  "422205": { titulo:"Recepcionista", descricao:"Recepciona e presta informações a visitantes, clientes e colaboradores, controlando o fluxo de entrada e saída e gerenciando a agenda da recepção.", atribuicoes:["Recepcionar e direcionar visitantes e clientes","Atender e transferir chamadas telefônicas","Controlar entrada e saída de pessoas","Gerenciar agenda de reuniões e salas","Receber e distribuir correspondências","Prestar informações gerais sobre a empresa"] },
+  "782305": { titulo:"Motorista de Caminhão", descricao:"Conduz caminhões para transporte de cargas em geral, realiza manutenção básica do veículo e assegura a entrega de mercadorias conforme roteiro estabelecido.", atribuicoes:["Conduzir caminhões para transporte de cargas","Realizar inspeção e manutenção preventiva do veículo","Carregar e descarregar mercadorias conferindo notas fiscais","Cumprir roteiros e prazos de entrega","Preencher documentação de transporte","Zelar pela conservação e segurança da carga"] },
+  "782510": { titulo:"Motorista de Veículos Leves", descricao:"Conduz automóveis e veículos leves para transporte de pessoas ou materiais, seguindo rotas e normas de trânsito.", atribuicoes:["Conduzir veículos leves com segurança","Transportar pessoas ou materiais conforme solicitação","Realizar manutenção preventiva básica do veículo","Controlar abastecimento e quilometragem","Cumprir leis de trânsito e normas de segurança","Manter veículo limpo e em bom estado"] },
+  "782515": { titulo:"Motorista de Ônibus", descricao:"Opera ônibus no transporte coletivo urbano, metropolitano ou rodoviário de passageiros, seguindo itinerários e horários definidos.", atribuicoes:["Conduzir ônibus em rotas urbanas ou intermunicipais","Recolher passagens e conferir documentos","Zelar pela segurança dos passageiros","Cumprir horários e itinerários estabelecidos","Realizar verificações diárias do veículo","Registrar ocorrências e reportar ao supervisor"] },
+  "524305": { titulo:"Vendedor Interno / Consultor Comercial", descricao:"Realiza vendas e atendimento a clientes por telefone, e-mail ou presencialmente, negociando condições e conduzindo o processo comercial até o fechamento.", atribuicoes:["Atender e prospectar clientes por telefone e e-mail","Apresentar produtos e serviços da empresa","Negociar preços, prazos e condições comerciais","Emitir orçamentos e registrar pedidos","Acompanhar pós-venda e satisfação do cliente","Manter carteira de clientes atualizada no CRM"] },
+  "524205": { titulo:"Vendedor Externo / Representante Comercial", descricao:"Prospecta e visita clientes para apresentar e vender produtos ou serviços, desenvolvendo e mantendo relacionamentos comerciais externos.", atribuicoes:["Prospectar e visitar clientes na região de atuação","Apresentar portfólio de produtos e serviços","Negociar contratos e condições comerciais","Elaborar propostas e acompanhar fechamentos","Manter relacionamento pós-venda","Reportar resultados e pipeline ao gestor"] },
+  "414105": { titulo:"Estoquista", descricao:"Controla a movimentação de mercadorias no estoque, garantindo organização, rastreabilidade e acuracidade dos inventários.", atribuicoes:["Receber, conferir e armazenar mercadorias","Controlar entradas e saídas no sistema","Realizar inventários e contagens de estoque","Separar pedidos para expedição","Organizar layout e endereçamento do estoque","Reportar divergências e avarias ao supervisor"] },
+  "212320": { titulo:"Administrador em Segurança da Informação", descricao:"Gerencia políticas, sistemas e infraestrutura de segurança da informação, protegendo dados e sistemas contra ameaças.", atribuicoes:["Implementar e gerenciar políticas de segurança da informação","Monitorar sistemas e detectar vulnerabilidades","Responder a incidentes de segurança","Realizar auditorias de conformidade e riscos","Treinar colaboradores em boas práticas de segurança","Garantir conformidade com LGPD e normas aplicáveis"] },
+};
+
+function buscarCBOLocal(cargo) {
+  // Normaliza: remove acentos, maiúsculas, espaços extras
+  const norm = s => s.toUpperCase().trim()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .replace(/\s+/g,' ');
+
+  const c = norm(cargo);
+
+  const mapa = [
+    // ADMINISTRATIVO
+    [["AUXILIAR ADMINISTRATIVO","AUXILIAR ADMIN","AUX ADMIN","AUX. ADMIN"],                         "411005"],
+    [["ASSISTENTE ADMINISTRATIVO","ASSISTENTE ADMIN","ASSIST ADMIN"],                                "411010"],
+    [["ANALISTA ADMINISTRATIVO","ANALISTA ADMIN"],                                                   "252305"],
+    [["COORDENADOR ADMINISTRATIVO","COORD ADMIN"],                                                   "141410"],
+    [["GERENTE ADMINISTRATIVO","GERENTE ADMIN"],                                                     "142105"],
+    // FINANCEIRO
+    [["AUXILIAR FINANCEIRO","AUX FINANCEIRO","AUX. FINANCEIRO"],                                    "411005_fin"],
+    [["ASSISTENTE FINANCEIRO","ASSIST FINANCEIRO"],                                                  "411010_fin"],
+    // RH — deve vir ANTES do ANALISTA FINANCEIRO para evitar match parcial
+    [["AUXILIAR DE RH","AUXILIAR RH","AUX RH","AUX. RH"],                                          "411005_rh"],
+    [["AUXILIAR DE DP","AUXILIAR DP","AUX DP","AUX. DP"],                                          "411005_dp"],
+    [["ASSISTENTE DE RH","ASSISTENTE RH"],                                                          "411010_rh"],
+    [["ASSISTENTE DE DP","ASSISTENTE DP"],                                                          "411010_dp"],
+    [["ANALISTA DE RH","ANALISTA RH","ANALISTA DE RECURSOS HUMANOS","GENERALISTA DE RH","GENERALISTA RH","RH GENERALISTA"], "252405"],
+    [["ANALISTA DE DP","ANALISTA DP"],                                                              "252405_dp"],
+    [["COORDENADOR DE RH","COORD RH","COORDENADOR RH/DP","COORD RH/DP"],                           "142305"],
+    [["GERENTE DE RH","GERENTE RH","GERENTE RH/DP"],                                               "142310"],
+    // FINANCEIRO
+    [["ANALISTA FINANCEIRO","ANALISTA DE FINANCAS","ANALISTA DE FINANCEIRO","ANALISTA FINANC"],    "252515"],
+    [["COORDENADOR FINANCEIRO","COORD FINANCEIRO"],                                                  "121005"],
+    [["GERENTE FINANCEIRO","GERENTE ADM. FINANCEIRO","GERENTE ADM FINANCEIRO"],                     "121010"],
+    // CONTABILIDADE
+    [["AUXILIAR CONTABIL","AUXILIAR CONTABEIS","AUX CONTABIL"],                                    "422105"],
+    [["ASSISTENTE CONTABIL","ASSIST CONTABIL","ASSISTENTE CONTABEIS"],                             "413110"],
+    [["ANALISTA CONTABIL","ANALISTA CONTABEIS","CONTADORA","CONTADOR"],                            "252210"],
+    [["COORDENADOR CONTABIL","COORD CONTABIL"],                                                    "121105"],
+    [["GERENTE CONTABIL","GERENTE DE CONTABILIDADE"],                                              "121110"],
+    // COMPRAS
+    [["AUXILIAR DE COMPRAS","AUX COMPRAS","AUXILIAR COMPRAS"],                                     "411005_cmp"],
+    [["ASSISTENTE DE COMPRAS","ASSIST COMPRAS","ASSISTENTE COMPRAS"],                              "411010_cmp"],
+    [["ANALISTA DE COMPRAS","ANALISTA COMPRAS"],                                                   "252705"],
+    [["COORDENADOR DE COMPRAS","COORD COMPRAS"],                                                   "141205"],
+    [["GERENTE DE COMPRAS","GERENTE COMPRAS"],                                                     "141210"],
+    // JURÍDICO/COMERCIAL
+    [["ANALISTA JURIDICO","ANALISTA JURIDICOS","JURIDICO"],                                        "241205"],
+    [["COORDENADOR JURIDICO","COORD JURIDICO"],                                                    "141305"],
+    [["GERENTE JURIDICO","GERENTE DE JURIDICO"],                                                   "141310"],
+    [["ANALISTA COMERCIAL","ANALISTA DE COMERCIO"],                                                "252605"],
+    [["ASSISTENTE COMERCIAL","ASSIST COMERCIAL"],                                                  "252405_com"],
+    [["ANALISTA DE LICITACAO","ANALISTA LICITACAO","LICITACAO"],                                   "142330"],
+    [["SECRETARIO","SECRETARIA","SECRETARIA EXECUTIVA"],                                           "422205_sec"],
+    [["VENDEDOR INTERNO","CONSULTOR COMERCIAL","CONSULTOR INTERNO","VENDEDOR TELEMARKETING"],      "524305"],
+    [["VENDEDOR EXTERNO","REPRESENTANTE COMERCIAL","CONSULTOR EXTERNO"],                          "524205"],
+    [["VENDEDOR","VENDEDORA"],                                                                     "524305"],
+    [["RECEPCIONISTA","RECEPCAO","RECEPÇÃO"],                                                     "422205"],
+    [["MOTORISTA DE CAMINHAO","MOTORISTA DE CAMINHÃO","CAMINHONEIRO","CARRETEIRO"],               "782305"],
+    [["MOTORISTA DE ONIBUS","MOTORISTA DE ÔNIBUS"],                                               "782515"],
+    [["MOTORISTA","CONDUTOR","CHOFER"],                                                            "782510"],
+    // GRÁFICA/OPERACIONAL
+    [["AUXILIAR DE ACABAMENTO","AUX ACABAMENTO","AUX. ACABAMENTO"],                               "766315"],
+    [["IMPRESSOR DE OFFSET","IMPRESSOR OFFSET","IMPRESSOR DE OFSETE"],                            "766215"],
+    [["ANALISTA DE OFFSET"],                                                                       "766215_an"],
+    [["ANALISTA DE ACABAMENTO"],                                                                   "766315_an"],
+    [["SUPERVISOR DE ACABAMENTO","SUPERV ACABAMENTO"],                                             "766315_sup"],
+    [["SUPERVISOR DE GRAFICA","SUPERVISOR GRAFICA OFFSET","SUPERV OFFSET"],                       "766215_sup"],
+    // LIMPEZA
+    [["FAXINEIRO","FAXINEIRA","ASG","AGENTE DE SERVICOS GERAIS","AUX DE LIMPEZA","AUXILIAR DE LIMPEZA"], "514320"],
+    [["ENCARREGADO DE LIMPEZA"],                                                                   "514325"],
+    [["LIDER DE LIMPEZA","LÍDER DE LIMPEZA"],                                                     "514330"],
+    // OBRAS/MANUTENÇÃO
+    [["AJUDANTE DE OBRA","SERVENTE","SERVENTE DE OBRAS"],                                          "710105"],
+    [["PEDREIRO"],                                                                                  "710210"],
+    [["ELETRICISTA"],                                                                               "715505"],
+    [["BOMBEIRO HIDRAULICO","BOMBEIRO HIDRÁULICO","HIDROULICO"],                                   "716610"],
+    [["CARPINTEIRO"],                                                                               "716505"],
+    [["PINTOR"],                                                                                    "712120"],
+    [["DUTEIRO"],                                                                                   "715110"],
+    [["ARMADOR"],                                                                                   "711110"],
+    [["AUXILIAR DE MANUTENCAO","AUX MANUTENCAO","AUXILIAR DE MANUTENÇÃO PREDIAL"],               "514310"],
+    [["ENCARREGADO DE MANUTENCAO","ENCARREGADO DE MANUTENÇÃO"],                                   "620105"],
+    [["ENCARREGADO DE INSTALACAO","ENCARREGADO DE INSTALAÇÃO"],                                   "620110"],
+    [["ENCARREGADO DE OBRAS","ENCARREGADO OBRAS"],                                                "620115"],
+    [["ENCARREGADO DE ARMACAO","ENCARREGADO DE ARMAÇÃO"],                                        "620120"],
+    [["CONTRAMESTRE"],                                                                             "620125"],
+    [["MESTRE DE OBRAS","MESTRE OBRAS"],                                                          "710205"],
+    [["ALMOXARIFE","ALMOXARIFE DE OBRAS"],                                                        "621005"],
+    [["SUPERVISOR DE ALMOXARIFE","SUPERV ALMOXARIFE"],                                           "621010"],
+    [["APONTADOR"],                                                                                "712210"],
+    [["VIGIA"],                                                                                    "710305"],
+    [["OFICIAL DE OBRAS","OFICIAL"],                                                              "620115"],
+    [["ENCARREGADO"],                                                                              "620115"],
+    // TÉCNICO
+    [["TECNICO DE SEGURANCA","TECNICO DE SEGURANÇA DO TRABALHO","TST"],                           "322205"],
+    [["ASSESSOR TECNICO","ASSESSOR TÉCNICO"],                                                     "314120"],
+    [["TECNICO EM ELETROTECNICA","TECNICO EM ELETROTÉCNICA"],                                    "313110"],
+    [["TECNICO EM EDIFICACOES","TECNICO EM EDIFICAÇÕES"],                                        "311010"],
+    [["TECNICO DE QUALIDADE","QUALIDADE"],                                                        "314105"],
+    // LAB/BIOMÉDICO
+    [["BIOMEDICO","BIOMEDICA","BIOMÉDICO","BIOMÉDICA"],                                           "221205"],
+    [["TECNICO EM LABORATORIO","TÉCNICO EM LABORATÓRIO","TECNICO LABORATORIO"],                  "324205"],
+    [["ASSESSOR CIENTIFICO","ASSESSORA CIENTIFICA","SUPERVISOR TECNICO E CIENTIFICO","ASSESSORIA CIENTIFICA"], "131205"],
+    // ENGENHARIA
+    [["ARQUITETO JUNIOR","ARQUITETO JR","ARQUITETO"],                                             "214105"],
+    [["ENGENHEIRO JUNIOR","ENGENHEIRO JR","ENGENHEIRO CLT"],                                     "214110"],
+    [["ENGENHEIRO PLENO","ENGENHEIRO PL"],                                                        "214115"],
+    [["ENGENHEIRO SENIOR","ENGENHEIRO SR"],                                                       "214120"],
+    [["ENGENHEIRO MASTER"],                                                                        "214125"],
+    [["ASSISTENTE TECNICO DE ARQUITETURA","ASSIST ARQUITETURA"],                                  "214130"],
+    [["ASSISTENTE DE ENGENHARIA","ASSIST ENGENHARIA"],                                            "214135"],
+    // DIRETORIA
+    [["DIRETOR ADMINISTRATIVO","DIRETORA ADMINISTRATIVA"],                                        "123105"],
+    [["DIRETOR EXECUTIVO","DIRETORA EXECUTIVA","DIRETOR GERAL","CEO"],                            "141105"],
+    // OUTROS
+    [["COZINHEIRO","COZINHEIRA"],                                                                  "513205"],
+    [["AUXILIAR DE COZINHA","AUX COZINHA"],                                                       "513505"],
+    [["ESTOQUISTA","AUXILIAR DE ESTOQUE","AUX ESTOQUE"],                                         "414105"],
+    [["ADMINISTRADOR EM SEGURANCA","SEGURANCA DA INFORMACAO","SEGURANÇA DA INFORMAÇÃO"],         "212320"],
+    [["ESTAGIARIO","ESTAGIÁRIA","ESTAGIÁRIO"],                                                    "411005"],
+  ];
+
+  for (const [keywords, code] of mapa) {
+    const normalized = keywords.map(k => norm(k));
+    if (normalized.some(k => c.includes(k) || k.includes(c.substring(0, Math.min(c.length, 12))))) {
+      const entry = CBO_LOCAL[code];
+      if (entry) return { code, ...entry };
+    }
+  }
+  return null;
+}
+function doBuscarCBO() {
+  const cargo = (document.getElementById('f-cargo')||{value:''}).value.trim();
+  form.cargo = cargo;
+  if (!cargo) { toast('Digite o cargo antes de buscar o CBO'); return; }
+
+  const loadEl = document.getElementById('cbo-loading');
+  const notEl  = document.getElementById('cbo-not-found');
+  const btn    = document.getElementById('btn-cbo');
+  notEl.style.display = 'none';
+  btn.disabled = true;
+
+  const key = cargo.toUpperCase().trim();
+
+  // Cache da sessão
+  if (cboCache[key]) {
+    applyBuscarResult(cboCache[key]);
+    btn.disabled = false;
+    return;
+  }
+
+  // 1. Banco local exato (cargos da empresa)
+  const local = buscarCBOLocal(cargo);
+  if (local) {
+    btn.disabled = false;
+    const result = { code: local.code, titulo: local.titulo, descricao: local.descricao, atribuicoes: local.atribuicoes };
+    cboCache[key] = result;
+    applyBuscarResult(result);
+    return;
+  }
+
+  // 2. Geração inteligente por padrão de cargo (100% offline, sempre funciona)
+  const result = gerarCBOInteligente(cargo);
+  cboCache[key] = result;
+  btn.disabled = false;
+  applyBuscarResult(result);
+}
+
+function gerarCBOInteligente(cargo) {
+  const norm = s => s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim();
+  const c = norm(cargo);
+  const titulo = cargo.trim();
+
+  // Detecta padrão e nível do cargo
+  const isAux     = c.includes('auxiliar') || c.includes('aux ') || c.startsWith('aux.');
+  const isAssist  = c.includes('assistente') || c.includes('assist ');
+  const isAnalista= c.includes('analista');
+  const isCoord   = c.includes('coordenador') || c.includes('coord ');
+  const isSuperv  = c.includes('supervisor') || c.includes('superv');
+  const isGerente = c.includes('gerente') || c.includes('ger ');
+  const isDiretor = c.includes('diretor') || c.includes('diretora');
+  const isEncarr  = c.includes('encarregado') || c.includes('encarr');
+  const isLider   = c.includes('lider') || c.includes('líder') || c.includes('ldr');
+  const isTecnico = c.includes('tecnico') || c.includes('técnico');
+  const isOficial = c.includes('oficial');
+  const isMestre  = c.includes('mestre');
+  const isEng     = c.includes('engenheiro') || c.includes('eng ');
+  const isArq     = c.includes('arquiteto');
+  const isOper    = c.includes('operador');
+
+  // Detecta área do cargo
+  const area = titulo.replace(/auxiliar|assistente|analista|coordenador|supervisor|gerente|diretor|tecnico|técnico|junior|jr|pleno|pl|senior|sr/gi,'').trim() || titulo;
+
+  // CBO por padrão
+  let code = '519935'; // Trabalhador polivalente (código genérico válido)
+  if (isDiretor) code = '123105';
+  else if (isGerente) code = '142105';
+  else if (isCoord) code = '141410';
+  else if (isSuperv || isMestre) code = '141415';
+  else if (isEncarr || isLider) code = '141420';
+  else if (isAnalista) code = '252305';
+  else if (isAssist) code = '411010';
+  else if (isAux) code = '411005';
+  else if (isTecnico) code = '314120';
+  else if (isEng) code = '214110';
+  else if (isArq) code = '214105';
+  else if (isOper) code = '784205';
+  else if (isOficial) code = '620115';
+
+  // Atribuições por padrão de cargo
+  let atribuicoes = [];
+  if (isDiretor) atribuicoes = [
+    `Dirigir e definir estratégias para a área de ${area}`,
+    'Coordenar equipes gerenciais e garantir resultados',
+    'Tomar decisões estratégicas de alto impacto',
+    'Representar a empresa perante sócios e stakeholders',
+    'Garantir saúde financeira e operacional da área',
+    'Reportar resultados ao conselho e investidores'
+  ];
+  else if (isGerente) atribuicoes = [
+    `Planejar e gerir a área de ${area}`,
+    'Liderar equipes e garantir atingimento de metas',
+    'Controlar orçamento e indicadores da área',
+    'Implementar processos e melhorias contínuas',
+    'Reportar resultados à diretoria',
+    'Assegurar conformidade e qualidade das entregas'
+  ];
+  else if (isCoord) atribuicoes = [
+    `Coordenar processos e equipe de ${area}`,
+    'Distribuir e acompanhar atividades da equipe',
+    'Garantir qualidade e cumprimento de prazos',
+    'Elaborar relatórios para a gestão',
+    'Implementar melhorias de processo',
+    'Treinar e desenvolver colaboradores da equipe'
+  ];
+  else if (isSuperv || isMestre || isEncarr || isLider) atribuicoes = [
+    `Supervisionar equipe e operações de ${area}`,
+    'Distribuir tarefas e acompanhar execução',
+    'Garantir qualidade e produtividade',
+    'Controlar materiais, insumos e recursos',
+    'Elaborar relatórios de desempenho',
+    'Assegurar cumprimento das normas de segurança'
+  ];
+  else if (isAnalista) atribuicoes = [
+    `Analisar dados e processos da área de ${area}`,
+    'Elaborar relatórios e indicadores de desempenho',
+    'Propor e implementar melhorias nos processos',
+    'Apoiar a tomada de decisão com análises técnicas',
+    'Controlar informações e registros da área',
+    'Comunicar resultados e recomendações à liderança'
+  ];
+  else if (isAssist) atribuicoes = [
+    `Executar atividades de ${area} com autonomia crescente`,
+    'Elaborar relatórios e controles da área',
+    'Atender demandas internas e externas da área',
+    'Apoiar processos e rotinas do setor',
+    'Manter registros e documentações atualizados',
+    'Cumprir prazos e procedimentos estabelecidos'
+  ];
+  else if (isAux) atribuicoes = [
+    `Apoiar as rotinas da área de ${area}`,
+    'Organizar e arquivar documentos do setor',
+    'Atender solicitações internas e externas',
+    'Alimentar sistemas e planilhas de controle',
+    'Apoiar a equipe nas atividades diárias',
+    'Cumprir normas e procedimentos do setor'
+  ];
+  else if (isTecnico) atribuicoes = [
+    `Executar atividades técnicas de ${area}`,
+    'Operar e manter equipamentos e sistemas',
+    'Elaborar laudos e relatórios técnicos',
+    'Realizar inspeções e ensaios técnicos',
+    'Garantir conformidade com normas técnicas',
+    'Cumprir procedimentos de segurança'
+  ];
+  else if (isEng || isArq) atribuicoes = [
+    `Elaborar e gerenciar projetos de ${area}`,
+    'Acompanhar execução conforme especificações técnicas',
+    'Emitir responsabilidade técnica pelas entregas',
+    'Coordenar equipes e subcontratados',
+    'Garantir qualidade e conformidade técnica',
+    'Reportar progresso e resultados ao cliente'
+  ];
+  else if (isOper || isOficial) atribuicoes = [
+    `Operar equipamentos e executar atividades de ${area}`,
+    'Seguir procedimentos e especificações técnicas',
+    'Realizar manutenção preventiva básica',
+    'Controlar qualidade da produção ou execução',
+    'Registrar dados e ocorrências',
+    'Cumprir normas de segurança e usar EPIs'
+  ];
+  else atribuicoes = [
+    `Executar atividades inerentes ao cargo de ${titulo}`,
+    'Cumprir metas e objetivos estabelecidos',
+    'Colaborar com a equipe e demais setores',
+    'Manter registros e documentações atualizados',
+    'Seguir normas e procedimentos internos',
+    'Participar de treinamentos e capacitações'
+  ];
+
+  const descricao = `${titulo}: profissional responsável por ${atribuicoes[0].toLowerCase()}, ${atribuicoes[1].toLowerCase()} e demais atribuições inerentes ao cargo, conforme as necessidades da organização e as diretrizes do Ministério do Trabalho.`;
+
+  return { code, titulo, descricao, atribuicoes };
+}
+
+const STEPS = ["Identificação","Atribuições","Atividades","Responsabilidade","Perfil","Revisão"];
+const NIVEL_LABELS = ['Iniciante','Básico','Intermediário','Avançado','Expert'];
+
+let currentStep = 0;
+let fichas = [];
+let rhLogado = false;
+let selectedId = null;
+
+function newForm() {
+  return {
+    nome:'', matricula:'', cargo:'', cbo:'', cboTitulo:'', cboDescricao:'', cboAtribuicoes:[],
+    depto:'', dataAdmissao:'', dataEntrevista: new Date().toISOString().slice(0,10), entrevistador:'',
+    atribuicoesCompete:'', atribuicoesAlem:'', atribuicoesNaoFaz:'',
+    atividades:'', frequencia:'', cargaHoraria:'',
+    responsabilidades:'', nivel:'', autonomia:'',
+    competencias:[
+      {nome:'Comunicação',val:0},{nome:'Trabalho em equipe',val:0},
+      {nome:'Proatividade',val:0},{nome:'Organização',val:0},
+      {nome:'Resolução de problemas',val:0},{nome:'Liderança',val:0},
+      {nome:'Conhecimento técnico',val:0},{nome:'Adaptabilidade',val:0}
+    ],
+    pontosFortes:'', areasDesenvolvimento:'', interesse:'', disponibilidade:'',
+    expectativaCarreira:'', formacao:'', experiencia:'', idiomas:''
+  };
+}
+let form = newForm();
+
+// ── SCREENS ──
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('visible'));
+  document.getElementById('screen-'+id).classList.add('visible');
+}
+function goHome() { showScreen('home'); }
+function goRH() { rhLogado ? (showScreen('rh-painel'), loadFichas()) : showScreen('rh-login'); }
+function startForm() { form = newForm(); currentStep=0; renderStep(); showScreen('form'); }
+
+// ── STEPPER ──
+function renderStepper() {
+  document.getElementById('stepper').innerHTML = STEPS.map((s,i)=>`
+    <div class="step ${i===currentStep?'active':i<currentStep?'done':''}">
+      <div class="step-circle">${i<currentStep?'✓':i+1}</div>
+      <div class="step-label">${s}</div>
+    </div>`).join('');
+}
+
+function renderStep() {
+  renderStepper();
+  const c = document.getElementById('step-content');
+  const fns = [step1, step2, step3, step4, step5, step6];
+  c.innerHTML = fns[currentStep]();
+  attachEvents();
+}
+
+// ── STEP 1 — Identificação ──
+function step1() {
+  const cboResult = form.cbo ? `
+    <div class="cbo-box">
+      <div class="cbo-tag"><div class="cbo-label">Código CBO</div><div class="cbo-num">${form.cbo}</div></div>
+      <div class="cbo-info"><div class="cbo-title">${form.cboTitulo}</div><div class="cbo-status">✅ CBO e atribuições carregadas</div></div>
+    </div>` : '';
+  return `
+    <div class="card-title">Identificação do(a) Colaborador(a)</div>
+    <div class="alert alert-green">✅ Dados e CBO carregados · Atribuições pré-preenchidas na etapa seguinte</div>
+    <div class="form-group"><label>Nome completo <span class="req">*</span></label>
+      <input type="text" id="f-nome" value="${esc(form.nome)}" placeholder="Seu nome completo">
+    </div>
+    ${cboResult}
+    <div class="form-group"><label>Cargo atual <span class="req">*</span></label>
+      <div class="buscar-cbo-row">
+        <input type="text" id="f-cargo" value="${esc(form.cargo)}" placeholder="Ex: ANALISTA DE RECURSOS HUMANOS">
+        <button class="btn-cbo" id="btn-cbo" onclick="doBuscarCBO()">🔍 Buscar CBO</button>
+      </div>
+      <div class="hint">💡 Clique em "Buscar CBO" para carregar automaticamente as atribuições típicas do seu cargo</div>
+      <div id="cbo-loading" style="display:none;margin-top:8px;align-items:center;gap:8px;font-size:13px;color:var(--gray-600)"><span class="spinner"></span> Consultando a tabela CBO do MTE...</div>
+      <div id="cbo-not-found" style="display:none" class="alert alert-amber">⚠️ CBO não encontrado. Preencha as atribuições manualmente na próxima etapa.</div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Data de admissão <span class="req">*</span></label><input type="date" id="f-admissao" value="${form.dataAdmissao}"></div>
+      <div class="form-group"><label>Departamento <span class="req">*</span></label>
+        <select id="f-depto"><option value="">Selecione...</option>
+          ${['RH','Financeiro','Operacional','Comercial','TI','Logística','Qualidade','Administrativo','Jurídico','Marketing'].map(d=>`<option ${form.depto===d?'selected':''}>${d}</option>`).join('')}
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Entrevistador(a) (RH)</label><input type="text" id="f-entrevistador" value="${esc(form.entrevistador)}" placeholder="Nome do entrevistador"></div>
+      <div class="form-group"><label>Data da entrevista</label><input type="date" id="f-dataentrevista" value="${form.dataEntrevista}"></div>
+    </div>
+    <div class="nav-footer">
+      <button class="btn-sec" onclick="goHome()">← Início</button>
+      <button class="btn-primary" onclick="nextStep()">Próximo →</button>
+    </div>`;
+}
+
+// ── STEP 2 — Atribuições ──
+function step2() {
+  const preloaded = form.cboAtribuicoes.length > 0;
+  const cboBlock = form.cbo ? `
+    <div class="cbo-box" style="margin-bottom:1.25rem">
+      <div class="cbo-tag"><div class="cbo-label">Código CBO</div><div class="cbo-num">${form.cbo}</div></div>
+      <div class="cbo-info"><div class="cbo-title">${form.cboTitulo}</div>
+        <div class="cbo-status">✅ Atribuições carregadas! CBO · ${form.cbo} · Edite abaixo se necessário.</div>
+      </div>
+    </div>
+    <div class="cbo-descritivo">
+      <h4>📋 Descritivo MTE — O que este cargo faz segundo o Ministério do Trabalho</h4>
+      <p style="margin-bottom:0.75rem">${form.cboDescricao}</p>
+      <h4 style="margin-top:0.75rem">Atribuições típicas do CBO ${form.cbo}:</h4>
+      <ul>${form.cboAtribuicoes.map(a=>`<li>${a}</li>`).join('')}</ul>
+    </div>` : `<div class="alert alert-amber">⚠️ Cargo não localizado no CBO. Descreva as atribuições manualmente.</div>`;
+  return `
+    <div class="card-title">Atribuições do Cargo</div>
+    <div class="card-sub">Cargo: <strong>${esc(form.cargo)||'—'}</strong> · Departamento ${esc(form.depto)||'—'}</div>
+    ${cboBlock}
+    <div class="form-group"><label>Atribuições que COMPETEM ao seu cargo <span class="req">*</span></label>
+      <textarea id="f-atrib-compete" rows="5" placeholder="Liste as principais responsabilidades e tarefas do seu cargo...">${esc(form.atribuicoesCompete||(preloaded?form.cboAtribuicoes.join('\n'):''))}</textarea>
+    </div>
+    <div class="form-group"><label>Atividades adicionais que você contribui além das descritas no seu cargo</label>
+      <textarea id="f-atrib-alem" placeholder="Liste atividades que você executa por necessidade da empresa, mas que não fazem parte formalmente do seu cargo...">${esc(form.atribuicoesAlem)}</textarea>
+    </div>
+    <div class="form-group"><label>Dentre as atribuições competentes ao seu cargo, qual(is) você ainda NÃO executa? Por quê?</label>
+      <textarea id="f-atrib-naofaz" placeholder="Ex: Não realizo análise de desempenho porque ainda não fui treinado(a) para essa atividade...">${esc(form.atribuicoesNaoFaz)}</textarea>
+    </div>
+    <div class="nav-footer">
+      <button class="btn-sec" onclick="prevStep()">← Anterior</button>
+      <button class="btn-primary" onclick="nextStep()">Próximo →</button>
+    </div>`;
+}
+
+// ── STEP 3 — Atividades + Competências ──
+function step3() {
+  const compHtml = form.competencias.map((c,i)=>`
+    <div class="comp-item">
+      <span class="comp-label">${c.nome}</span>
+      <div class="stars">${[1,2,3,4,5].map(n=>`<button class="star ${c.val>=n?'on':''}" onclick="setStar(${i},${n})">${n}</button>`).join('')}</div>
+      <span class="star-val" id="sv-${i}">${c.val>0?NIVEL_LABELS[c.val-1]:'—'}</span>
+    </div>`).join('');
+  return `
+    <div class="card-title">Atividades, Rotina e Competências</div>
+
+    <div class="section-divider"><span>1</span>Rotina de Atividades</div>
+    <div class="form-group"><label>Descreva sua rotina de atividades diárias / semanais <span class="req">*</span></label>
+      <textarea id="f-atividades" rows="4" placeholder="Ex: Segunda — reunião de equipe; atualização de indicadores. Terça/Quarta — triagem de currículos...">${esc(form.atividades)}</textarea>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Frequência de atividades críticas
+          <span style="display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:50%;background:var(--gray-200);color:var(--gray-600);font-size:11px;font-weight:700;cursor:help;margin-left:4px;vertical-align:middle" title="Atividade crítica é aquela que, se não for realizada ou for feita errado, impacta diretamente o funcionamento da equipe, do setor ou da empresa. Ex: fechamento de folha, emissão de nota fiscal, atendimento ao cliente em prazo definido.">?</span>
+        </label>
+        <select id="f-frequencia"><option value="">Selecione...</option>
+          ${['Diária','Semanal','Quinzenal','Mensal','Eventual'].map(f=>`<option ${form.frequencia===f?'selected':''}>${f}</option>`).join('')}
+        </select>
+        <div style="font-size:12px;color:var(--gray-600);margin-top:5px;line-height:1.5">💡 <strong>Atividade crítica</strong>: tarefa cujo não cumprimento ou erro impacta diretamente o funcionamento da equipe ou empresa.</div>
+      </div>
+      <div class="form-group"><label>Carga horária semanal</label>
+        <select id="f-carga"><option value="">Selecione...</option>
+          ${['20h','30h','40h','44h','Outro'].map(f=>`<option ${form.cargaHoraria===f?'selected':''}>${f}</option>`).join('')}
+        </select>
+      </div>
+    </div>
+
+    <div class="section-divider"><span>2</span>Auto-avaliação de Competências</div>
+    <div class="alert alert-blue" style="margin-bottom:1rem">💡 Avalie de 1 (iniciante) a 5 (expert). Seja honesto — esta avaliação fundamenta seu Plano de Desenvolvimento Individual.</div>
+    ${compHtml}
+
+    <div class="nav-footer">
+      <button class="btn-sec" onclick="prevStep()">← Anterior</button>
+      <button class="btn-primary" onclick="nextStep()">Próximo →</button>
+    </div>`;
+}
+
+// ── STEP 4 — Responsabilidade ──
+function step4() {
+  return `
+    <div class="card-title">Responsabilidade e Nível</div>
+    <div class="form-group"><label>Principais responsabilidades e decisões do cargo <span class="req">*</span></label>
+      <textarea id="f-responsab" rows="4" placeholder="Quais decisões você toma de forma autônoma? Quais impactos seu trabalho tem para a equipe/empresa?">${esc(form.responsabilidades)}</textarea>
+    </div>
+    <div class="form-group"><label>Nível de autonomia</label>
+      <select id="f-autonomia"><option value="">Selecione...</option>
+        ${['Executa sob supervisão direta','Executa com orientação periódica','Executa com autonomia, reporta resultados','Decide e orienta outros','Define estratégias'].map(a=>`<option ${form.autonomia===a?'selected':''}>${a}</option>`).join('')}
+      </select>
+    </div>
+    <div class="form-group"><label>Enquadramento de nível (auto-avaliação)</label>
+      <div class="level-grid">
+        ${['Júnior','Pleno','Sênior'].map(n=>`
+          <div class="level-opt ${form.nivel===n?'selected':''}" onclick="selectNivel('${n}')">
+            <div class="level-name">${n}</div>
+            <div class="level-desc">${n==='Júnior'?'Até 2 anos, executa com supervisão':n==='Pleno'?'2–5 anos, executa com autonomia':'5+ anos, referência técnica'}</div>
+          </div>`).join('')}
+      </div>
+    </div>
+    <div class="nav-footer">
+      <button class="btn-sec" onclick="prevStep()">← Anterior</button>
+      <button class="btn-primary" onclick="nextStep()">Próximo →</button>
+    </div>`;
+}
+
+// ── STEP 5 — Perfil + Autodesenvolvimento ──
+function step5() {
+  const interesseOpts = [
+    {val:'sim-migrar', label:'Sim, tenho interesse em migrar de área'},
+    {val:'sim-manter', label:'Sim, tenho interesse em outra área, mas prefiro permanecer na atual'},
+    {val:'nao', label:'Não, quero crescer na minha área atual'}
+  ];
+  const dispoOpts = [
+    {val:'horario-trabalho', icon:'🕐', label:'Horário de trabalho'},
+    {val:'fora-horario', icon:'🌙', label:'Fora do horário de trabalho'},
+    {val:'ambos', icon:'✅', label:'Ambos os horários'}
+  ];
+  return `
+    <div class="card-title">Perfil e Autodesenvolvimento</div>
+
+    <div class="section-divider"><span>1</span>Formação e Experiência</div>
+    <div class="form-row">
+      <div class="form-group"><label>Formação acadêmica</label>
+        <select id="f-formacao"><option value="">Selecione...</option>
+          ${['Ensino médio','Técnico','Graduação incompleta','Graduação','Pós-graduação','Mestrado','Doutorado'].map(f=>`<option ${form.formacao===f?'selected':''}>${f}</option>`).join('')}
+        </select>
+      </div>
+      <div class="form-group"><label>Experiência na função</label>
+        <select id="f-experiencia"><option value="">Selecione...</option>
+          ${['Menos de 1 ano','1 a 2 anos','2 a 5 anos','5 a 10 anos','Mais de 10 anos'].map(e=>`<option ${form.experiencia===e?'selected':''}>${e}</option>`).join('')}
+        </select>
+      </div>
+    </div>
+    <div class="form-group"><label>Idiomas</label>
+      <input type="text" id="f-idiomas" value="${esc(form.idiomas)}" placeholder="Ex: Inglês intermediário, Espanhol básico">
+    </div>
+
+    <div class="section-divider"><span>2</span>Autodesenvolvimento</div>
+    <div class="form-group"><label>Principais pontos fortes <span class="req">*</span></label>
+      <textarea id="f-pontos-fortes" placeholder="Descreva o que você faz bem, onde se destaca e quais são suas maiores fortalezas profissionais...">${esc(form.pontosFortes)}</textarea>
+    </div>
+    <div class="form-group"><label>Áreas para desenvolvimento</label>
+      <textarea id="f-areas-dev" placeholder="O que você gostaria de melhorar ou aprender? Quais habilidades ainda precisa desenvolver?">${esc(form.areasDesenvolvimento)}</textarea>
+    </div>
+    <div class="form-group"><label>Expectativa de carreira (próximos 2 anos)</label>
+      <textarea id="f-expectativa" placeholder="Onde você se vê dentro da empresa daqui a 2 anos? Que tipo de desafios ou posição almeja?">${esc(form.expectativaCarreira)}</textarea>
+    </div>
+
+    <div class="section-divider"><span>3</span>Interesse em Outras Áreas</div>
+    <div class="alert alert-purple">🔍 Esta informação ajuda o RH a identificar talentos com potencial de crescimento em outras frentes da empresa.</div>
+    <div class="form-group"><label>Você tem interesse em atuar em outra área da empresa?</label>
+      <div class="interesse-grid">
+        ${interesseOpts.map(o=>`
+          <div class="interesse-opt ${form.interesse===o.val?'selected':''}" onclick="selectInteresse('${o.val}')">
+            <div class="io-radio"></div>
+            <span class="io-text">${o.label}</span>
+          </div>`).join('')}
+      </div>
+    </div>
+
+    <div class="section-divider"><span>4</span>Disponibilidade para Capacitação</div>
+    <div class="form-group"><label>Quando você tem disponibilidade para treinamentos e capacitações?</label>
+      <div class="dispon-grid">
+        ${dispoOpts.map(o=>`
+          <div class="dispon-opt ${form.disponibilidade===o.val?'selected':''}" onclick="selectDisponibilidade('${o.val}')">
+            <div class="do-icon">${o.icon}</div>
+            <div class="do-label">${o.label}</div>
+          </div>`).join('')}
+      </div>
+    </div>
+
+    <div class="nav-footer">
+      <button class="btn-sec" onclick="prevStep()">← Anterior</button>
+      <button class="btn-primary" onclick="nextStep()">Próximo →</button>
+    </div>`;
+}
+
+// ── STEP 6 — Revisão ──
+function step6() {
+  const barsHtml = form.competencias.map(c=>{
+    const pct = c.val*20;
+    const color = pct>=80?'#0d9f6e':pct>=60?'#1a56db':pct>=40?'#d97706':'#9ca3af';
+    return `<div class="bar-row">
+      <span class="bar-name">${c.nome}</span>
+      <div class="bar-track"><div class="bar-fill" style="width:${pct}%;background:${color}"></div></div>
+      <span class="bar-score" style="color:${color}">${c.val>0?NIVEL_LABELS[c.val-1]:'—'}</span>
+    </div>`;}).join('');
+  const interesseLabel = {
+    'sim-migrar':'Sim, interesse em migrar de área',
+    'sim-manter':'Sim, interesse em outra área (mas quer permanecer)',
+    'nao':'Não, quer crescer na área atual'
+  };
+  const disponLabel = {
+    'horario-trabalho':'Durante o horário de trabalho',
+    'fora-horario':'Fora do horário de trabalho',
+    'ambos':'Ambos os horários'
+  };
+  return `
+    <div class="card-title">Revisão — Confirme antes de enviar</div>
+    <div class="alert alert-blue">📋 Revise todas as informações. Após envio, a ficha ficará disponível para o RH elaborar seu PDI.</div>
+
+    <div class="rev-section">
+      <h4>Identificação</h4>
+      <div class="rev-grid">
+        <div class="rev-item"><div class="rv-label">Nome</div><div class="rv-val">${esc(form.nome)||'—'}</div></div>
+        <div class="rev-item"><div class="rv-label">Cargo</div><div class="rv-val">${esc(form.cargo)||'—'}</div></div>
+        <div class="rev-item"><div class="rv-label">CBO</div><div class="rv-val">${form.cbo?form.cbo+' · '+esc(form.cboTitulo):'—'}</div></div>
+        <div class="rev-item"><div class="rv-label">Departamento</div><div class="rv-val">${esc(form.depto)||'—'}</div></div>
+        <div class="rev-item"><div class="rv-label">Admissão</div><div class="rv-val">${form.dataAdmissao||'—'}</div></div>
+        <div class="rev-item"><div class="rv-label">Nível auto-avaliado</div><div class="rv-val">${form.nivel||'—'}</div></div>
+      </div>
+    </div>
+
+    <div class="rev-section">
+      <h4>Atribuições</h4>
+      <div class="rv-label" style="font-size:11px;color:var(--gray-400);margin-bottom:4px">Atribuições que competem ao cargo</div>
+      <div class="rev-text">${esc(form.atribuicoesCompete)||'—'}</div>
+      <div class="rv-label" style="font-size:11px;color:var(--gray-400);margin:10px 0 4px">Atividades além do cargo</div>
+      <div class="rev-text">${esc(form.atribuicoesAlem)||'Não informado'}</div>
+      <div class="rv-label" style="font-size:11px;color:var(--gray-400);margin:10px 0 4px">O que ainda NÃO executa</div>
+      <div class="rev-text" style="background:var(--amber-light);border:1px solid #fde68a">${esc(form.atribuicoesNaoFaz)||'Não informado'}</div>
+    </div>
+
+    <div class="rev-section">
+      <h4>Competências auto-avaliadas</h4>
+      ${barsHtml}
+    </div>
+
+    <div class="rev-section">
+      <h4>Autodesenvolvimento</h4>
+      <div class="rv-label" style="font-size:11px;color:var(--gray-400);margin-bottom:4px">Pontos fortes</div>
+      <div class="rev-text">${esc(form.pontosFortes)||'Não informado'}</div>
+      <div class="rv-label" style="font-size:11px;color:var(--gray-400);margin:10px 0 4px">Áreas para desenvolvimento</div>
+      <div class="rev-text">${esc(form.areasDesenvolvimento)||'Não informado'}</div>
+      <div class="rv-label" style="font-size:11px;color:var(--gray-400);margin:10px 0 4px">Expectativa de carreira</div>
+      <div class="rev-text">${esc(form.expectativaCarreira)||'Não informado'}</div>
+      <div class="rev-grid" style="margin-top:10px">
+        <div class="rev-item"><div class="rv-label">Interesse em outras áreas</div><div class="rv-val" style="font-size:13px">${interesseLabel[form.interesse]||'Não informado'}</div></div>
+        <div class="rev-item"><div class="rv-label">Disponibilidade para capacitação</div><div class="rv-val" style="font-size:13px">${disponLabel[form.disponibilidade]||'Não informado'}</div></div>
+      </div>
+    </div>
+
+    <div class="rev-section">
+      <h4>Perfil</h4>
+      <div class="rev-grid">
+        <div class="rev-item"><div class="rv-label">Formação</div><div class="rv-val">${esc(form.formacao)||'—'}</div></div>
+        <div class="rev-item"><div class="rv-label">Experiência</div><div class="rv-val">${esc(form.experiencia)||'—'}</div></div>
+        <div class="rev-item"><div class="rv-label">Idiomas</div><div class="rv-val">${esc(form.idiomas)||'—'}</div></div>
+        <div class="rev-item"><div class="rv-label">Autonomia</div><div class="rv-val">${esc(form.autonomia)||'—'}</div></div>
+      </div>
+    </div>
+
+    <div class="nav-footer">
+      <button class="btn-sec" onclick="prevStep()">← Anterior</button>
+      <button class="btn-primary btn-success" id="submit-final" onclick="submitFicha()">✅ Confirmar e enviar</button>
+    </div>`;
+}
+
+// ── EVENTS ──
+function attachEvents() {
+  const bind = (id,key) => { const el=document.getElementById(id); if(el) el.addEventListener(el.tagName==='SELECT'?'change':'input',()=>form[key]=el.value); };
+  bind('f-nome','nome'); bind('f-cargo','cargo'); bind('f-depto','depto');
+  bind('f-admissao','dataAdmissao'); bind('f-dataentrevista','dataEntrevista'); bind('f-entrevistador','entrevistador');
+  bind('f-atrib-compete','atribuicoesCompete'); bind('f-atrib-alem','atribuicoesAlem'); bind('f-atrib-naofaz','atribuicoesNaoFaz');
+  bind('f-atividades','atividades'); bind('f-frequencia','frequencia'); bind('f-carga','cargaHoraria');
+  bind('f-responsab','responsabilidades'); bind('f-autonomia','autonomia');
+  bind('f-pontos-fortes','pontosFortes'); bind('f-areas-dev','areasDesenvolvimento');
+  bind('f-expectativa','expectativaCarreira'); bind('f-formacao','formacao');
+  bind('f-experiencia','experiencia'); bind('f-idiomas','idiomas');
+}
+
+
+
+function setStar(idx, val) {
+  form.competencias[idx].val = val;
+  const container = document.getElementById('step-content');
+  container.querySelectorAll('.comp-item')[idx].querySelectorAll('.star').forEach((s,i)=>s.classList.toggle('on',i<val));
+  const sv = document.getElementById('sv-'+idx);
+  if(sv) sv.textContent = NIVEL_LABELS[val-1]||'—';
+}
+
+function selectNivel(n) {
+  form.nivel = n;
+  document.querySelectorAll('.level-opt').forEach(el=>el.classList.toggle('selected', el.querySelector('.level-name').textContent===n));
+}
+
+function selectInteresse(v) {
+  form.interesse = v;
+  document.querySelectorAll('.interesse-opt').forEach(el=>el.classList.toggle('selected', el.getAttribute('onclick').includes("'"+v+"'")));
+}
+
+function selectDisponibilidade(v) {
+  form.disponibilidade = v;
+  document.querySelectorAll('.dispon-opt').forEach(el=>el.classList.toggle('selected', el.getAttribute('onclick').includes("'"+v+"'")));
+}
+
+// ── NAV ──
+function nextStep() {
+  if (currentStep===0) {
+    if (!form.nome.trim()) { toast('Preencha o nome completo'); return; }
+    if (!form.cargo.trim()) { toast('Preencha o cargo atual'); return; }
+    if (!form.depto) { toast('Selecione o departamento'); return; }
+  }
+  if (currentStep===1 && !form.atribuicoesCompete.trim()) { toast('Descreva as atribuições do cargo'); return; }
+  if (currentStep===2 && !form.atividades.trim()) { toast('Descreva sua rotina de atividades'); return; }
+  if (currentStep===4 && !form.pontosFortes.trim()) { toast('Descreva seus pontos fortes'); return; }
+  if (currentStep < STEPS.length-1) { currentStep++; renderStep(); window.scrollTo(0,0); }
+}
+function prevStep() {
+  if (currentStep>0) { currentStep--; renderStep(); window.scrollTo(0,0); }
+}
+
+// ── CONFIG BACKEND ──
+const SHEETS_URL = 'https://script.google.com/macros/s/AKfycbwkj1rUoNskgDVkM5KkJ_iYsolfTcoF4pLrnZVoHLlpZI344HQR6zrN3Xy2rcYhMhk2Yg/exec';
+
+function backendOk() {
+  const url = getSheetsURL();
+  return !!(url && url.startsWith('https://script.google.com') && url.length > 40);
+}
+
+function getSheetsURL() {
+  const runtime = window.SHEETS_URL_RUNTIME;
+  const stored  = localStorage.getItem('sheets_url');
+  // Só usa se for uma URL real do Apps Script
+  if (runtime && runtime.startsWith('https://script.google.com')) return runtime;
+  if (stored  && stored.startsWith('https://script.google.com'))  return stored;
+  if (SHEETS_URL && SHEETS_URL !== 'SUA_URL_AQUI') return SHEETS_URL;
+  return null;
+}
+
+// ── SUBMIT ──
+async function submitFicha() {
+  const btn = document.getElementById('submit-final');
+  btn.disabled=true; btn.textContent='⏳ Enviando...';
+  const ficha = {
+    id: Date.now().toString(),
+    ...JSON.parse(JSON.stringify(form)),
+    data: new Date().toLocaleDateString('pt-BR'),
+    status: 'novo', pdi: '', obsRH: '', prazoCtrl: ''
+  };
+  try {
+    if (backendOk() && getSheetsURL()) {
+      await fetch(getSheetsURL(), {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'text/plain' },
+        body: JSON.stringify({ action: 'salvarFicha', ficha })
+      });
+    } else {
+      const lista = JSON.parse(localStorage.getItem('mapeamento_fichas')||'[]');
+      lista.push(ficha);
+      localStorage.setItem('mapeamento_fichas', JSON.stringify(lista));
+    }
+    showScreen('success');
+    form = newForm(); currentStep = 0;
+  } catch(e) {
+    // no-cors fetch não lança erro normalmente, mas por precaução:
+    const lista = JSON.parse(localStorage.getItem('mapeamento_fichas')||'[]');
+    lista.push(ficha);
+    localStorage.setItem('mapeamento_fichas', JSON.stringify(lista));
+    showScreen('success');
+    form = newForm(); currentStep = 0;
+  }
+}
+
+// ── RH ──
+function loginRH() {
+  const p = document.getElementById('rh-pass').value;
+  if (p === 'Rh2026') {
+    rhLogado=true; document.getElementById('login-err').style.display='none';
+    // Limpa URL inválida do localStorage se houver
+    const stored = localStorage.getItem('sheets_url');
+    if (stored && !stored.startsWith('https://script.google.com')) {
+      localStorage.removeItem('sheets_url');
+    }
+    const savedUrl = localStorage.getItem('sheets_url');
+    if (savedUrl) window.SHEETS_URL_RUNTIME = savedUrl;
+    document.getElementById('banner-config').style.display = backendOk() ? 'none' : 'block';
+    showScreen('rh-painel'); loadFichas();
+  } else { document.getElementById('login-err').style.display='block'; }
+}
+function logout() { rhLogado=false; showScreen('home'); }
+
+function salvarURL() {
+  const url = document.getElementById('input-url').value.trim();
+  if (!url.startsWith('https://script.google.com')) {
+    document.getElementById('url-status').innerHTML = '<span style="color:#dc2626">⚠️ URL inválida. Deve começar com https://script.google.com</span>';
+    return;
+  }
+  localStorage.setItem('sheets_url', url);
+  window.SHEETS_URL_RUNTIME = url;
+  document.getElementById('url-status').innerHTML = '<span style="color:#0d9f6e">✅ URL salva! Clique em Fechar e recarregue as fichas.</span>';
+  document.getElementById('banner-config').style.display = 'none';
+  setTimeout(()=>document.getElementById('modal-config').style.display='none', 1500);
+}
+
+function copiarScript() {
+  const txt = document.getElementById('script-code').textContent;
+  navigator.clipboard.writeText(txt).then(()=>toast('📋 Código copiado!')).catch(()=>toast('Selecione o código manualmente'));
+}
+
+function initials(nome) {
+  return (nome||'').trim().split(' ').filter(Boolean).slice(0,2).map(w=>w[0].toUpperCase()).join('');
+}
+
+async function loadFichas() {
+  const listEl = document.getElementById('fichas-list');
+  if (listEl) listEl.innerHTML = '<div class="empty"><span class="spinner"></span> Carregando fichas...</div>';
+  if (backendOk()) {
+    try {
+      const res = await fetch(getSheetsURL() + '?action=listarFichas', { cache: 'no-store' });
+      const data = await res.json();
+      fichas = Array.isArray(data) ? data : [];
+    } catch(e) {
+      
+      // Fallback para localStorage — fichas enviadas neste browser
+      try { fichas = JSON.parse(localStorage.getItem('mapeamento_fichas')||'[]'); } catch(_){ fichas=[]; }
+      if (listEl) {
+        const banner = document.getElementById('banner-config');
+        if (banner) {
+          banner.style.display = 'block';
+          banner.style.background = '#e8f0fe';
+          banner.style.borderColor = '#bfdbfe';
+          banner.style.color = '#1e40af';
+          banner.innerHTML = '🔒 <strong>Preview local</strong> — o fetch ao Google Sheets é bloqueado aqui. No site publicado (GitHub Pages) funciona normalmente. Dados locais carregados.';
+        }
+      }
+    }
+  } else {
+    try { fichas = JSON.parse(localStorage.getItem('mapeamento_fichas')||'[]'); } catch(e){ fichas=[]; }
+  }
+  updateMetrics(); renderFichas();
+}
+
+function updateMetrics() {
+  document.getElementById('m-total').textContent=fichas.length;
+  document.getElementById('m-aguard').textContent=fichas.filter(f=>f.status==='novo').length;
+  document.getElementById('m-prog').textContent=fichas.filter(f=>f.status==='andamento').length;
+  document.getElementById('m-conc').textContent=fichas.filter(f=>f.status==='concluido').length;
+}
+
+function renderFichas() {
+  const search=(document.getElementById('rh-search')||{value:''}).value.toLowerCase();
+  const filter=(document.getElementById('rh-filter')||{value:''}).value;
+  const lista=fichas.filter(f=>{
+    const ms=f.nome.toLowerCase().includes(search)||f.cargo.toLowerCase().includes(search);
+    const mf=!filter||f.status===filter;
+    return ms&&mf;
+  });
+  const el=document.getElementById('fichas-list');
+  if (!lista.length) { el.innerHTML='<div class="empty">📭 Nenhuma ficha encontrada.</div>'; return; }
+  const bmap={novo:'b-new',andamento:'b-prog',concluido:'b-done'};
+  const lmap={novo:'Aguardando PDI',andamento:'Em andamento',concluido:'Concluído'};
+  el.innerHTML=lista.map(f=>`
+    <div class="ficha-card ${selectedId===f.id?'sel':''}" onclick="selFicha('${f.id}')">
+      <div class="fc-top">
+        <div class="avatar">${initials(f.nome)}</div>
+        <div style="flex:1">
+          <div style="font-size:14px;font-weight:600">${esc(f.nome)}</div>
+          <div style="font-size:12px;color:var(--gray-400)">${esc(f.cargo)} · ${esc(f.depto)||'—'}${f.cbo?' · CBO '+f.cbo:''}</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span class="badge ${bmap[f.status]||'b-new'}">${lmap[f.status]||'Novo'}</span>
+          <span style="font-size:11px;color:var(--gray-400)">${f.data}</span>
+        </div>
+      </div>
+    </div>`).join('');
+  if (selectedId) renderDetail(selectedId);
+}
+
+function selFicha(id) { selectedId=id; renderFichas(); }
+
+function renderDetail(id) {
+  const f=fichas.find(x=>x.id===id);
+  const area=document.getElementById('detail-area');
+  if(!f) { area.innerHTML=''; return; }
+  const bars=(f.competencias||[]).map(c=>{
+    const pct=c.val*20;
+    const color=pct>=80?'#0d9f6e':pct>=60?'#1a56db':pct>=40?'#d97706':'#9ca3af';
+    return `<div class="bar-row">
+      <span class="bar-name">${c.nome}</span>
+      <div class="bar-track"><div class="bar-fill" style="width:${pct}%;background:${color}"></div></div>
+      <span class="bar-score" style="color:${color}">${c.val>0?NIVEL_LABELS[c.val-1]:'—'}</span>
+    </div>`;}).join('');
+  const interesseLabel={'sim-migrar':'Sim, interesse em migrar de área','sim-manter':'Sim, mas prefere permanecer','nao':'Não, quer crescer na área atual'};
+  const disponLabel={'horario-trabalho':'Horário de trabalho','fora-horario':'Fora do horário','ambos':'Ambos'};
+  area.innerHTML=`
+    <div class="detail-panel">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:1.25rem">
+        <div class="avatar" style="width:44px;height:44px;font-size:15px">${initials(f.nome)}</div>
+        <div>
+          <p style="font-size:16px;font-weight:700;margin:0">${esc(f.nome)}</p>
+          <p style="font-size:13px;color:var(--gray-600);margin:2px 0 0">${esc(f.cargo)} · ${esc(f.depto)||'—'}${f.nivel?' · '+f.nivel:''}</p>
+        </div>
+      </div>
+      ${f.cbo?`<div class="alert alert-blue" style="margin-bottom:1rem">📋 CBO ${f.cbo} · ${esc(f.cboTitulo)}</div>`:''}
+      <div class="detail-grid">
+        <div class="df"><div class="df-l">Admissão</div><div class="df-v">${f.dataAdmissao||'—'}</div></div>
+        <div class="df"><div class="df-l">Formação</div><div class="df-v">${esc(f.formacao)||'—'}</div></div>
+        <div class="df"><div class="df-l">Experiência</div><div class="df-v">${esc(f.experiencia)||'—'}</div></div>
+        <div class="df"><div class="df-l">Autonomia</div><div class="df-v">${esc(f.autonomia)||'—'}</div></div>
+        <div class="df"><div class="df-l">Interesse em outras áreas</div><div class="df-v">${interesseLabel[f.interesse]||'—'}</div></div>
+        <div class="df"><div class="df-l">Disponibilidade</div><div class="df-v">${disponLabel[f.disponibilidade]||'—'}</div></div>
+      </div>
+
+      <div style="font-size:12px;font-weight:700;color:var(--gray-600);text-transform:uppercase;letter-spacing:.04em;border-bottom:1.5px solid var(--gray-200);padding-bottom:6px;margin:1.25rem 0 0.75rem">Atribuições</div>
+      <div class="rh-block"><div class="rh-bl">Competências ao cargo</div><div class="rh-bv">${esc(f.atribuicoesCompete)||'—'}</div></div>
+      <div class="rh-block"><div class="rh-bl">Atividades além do cargo</div><div class="rh-bv">${esc(f.atribuicoesAlem)||'Não informado'}</div></div>
+      <div class="rh-block"><div class="rh-bl">O que ainda NÃO executa</div><div class="rh-bv rh-bv-warn">${esc(f.atribuicoesNaoFaz)||'Não informado'}</div></div>
+
+      <div style="font-size:12px;font-weight:700;color:var(--gray-600);text-transform:uppercase;letter-spacing:.04em;border-bottom:1.5px solid var(--gray-200);padding-bottom:6px;margin:1.25rem 0 0.75rem">Competências auto-avaliadas</div>
+      ${bars}
+
+      <div style="font-size:12px;font-weight:700;color:var(--gray-600);text-transform:uppercase;letter-spacing:.04em;border-bottom:1.5px solid var(--gray-200);padding-bottom:6px;margin:1.25rem 0 0.75rem">Autodesenvolvimento</div>
+      <div class="rh-block"><div class="rh-bl">Pontos fortes</div><div class="rh-bv">${esc(f.pontosFortes)||'Não informado'}</div></div>
+      <div class="rh-block"><div class="rh-bl">Áreas para desenvolvimento</div><div class="rh-bv rh-bv-purple">${esc(f.areasDesenvolvimento)||'Não informado'}</div></div>
+      <div class="rh-block"><div class="rh-bl">Expectativa de carreira</div><div class="rh-bv">${esc(f.expectativaCarreira)||'Não informado'}</div></div>
+
+      <div class="pdi-area">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.75rem;flex-wrap:wrap;gap:8px">
+          <h3 style="margin:0">📋 PDI — Plano de Desenvolvimento Individual</h3>
+          <button id="btn-gerar-pdi-${f.id}" class="btn-gerar-pdi" onclick="gerarPDIcomIA('${f.id}')">
+            ✨ Gerar PDI com IA
+          </button>
+        </div>
+        <div id="pdi-ai-loading-${f.id}" style="display:none;align-items:center;gap:10px;padding:12px;background:var(--blue-light);border-radius:var(--radius);margin-bottom:10px;font-size:13px;color:#1e40af">
+          <span class="spinner"></span> Analisando respostas e gerando PDI personalizado...
+        </div>
+        <textarea id="pdi-${f.id}" style="width:100%;min-height:200px;padding:10px 12px;border:1.5px solid var(--gray-200);border-radius:var(--radius);font-size:13px;font-family:inherit;line-height:1.7;resize:vertical" placeholder="Clique em ✨ Gerar PDI com IA para criar automaticamente, ou escreva manualmente...">${esc(f.pdi||'')}</textarea>
+
+        <div style="margin-top:1.25rem;padding-top:1.25rem;border-top:1px solid var(--gray-200)">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+            <h3 style="margin:0;font-size:14px;font-weight:700">🎯 Metas SMART</h3>
+            <button class="btn-add-meta" style="width:auto;padding:5px 14px" onclick="adicionarMeta('${f.id}')">+ Adicionar meta</button>
+          </div>
+          <p style="font-size:12px;color:var(--gray-600);margin-bottom:10px">Específica · Mensurável · Atingível · Relevante · Temporal</p>
+          <table class="smart-table">
+            <thead><tr>
+              <th style="width:28%">Meta (O quê)</th>
+              <th style="width:20%">Indicador (Como medir)</th>
+              <th style="width:15%">Prazo</th>
+              <th style="width:17%">Responsável</th>
+              <th style="width:15%">Status</th>
+              <th style="width:5%"></th>
+            </tr></thead>
+            <tbody id="smart-tbody-${f.id}">${renderSmartRows(f)}</tbody>
+          </table>
+          <button class="btn-add-meta" onclick="adicionarMeta('${f.id}')">+ Nova meta SMART</button>
+        </div>
+
+        <div class="pdi-actions" style="margin-top:1rem">
+          <select class="status-sel" id="st-${f.id}">
+            <option value="novo" ${f.status==='novo'?'selected':''}>Aguardando PDI</option>
+            <option value="andamento" ${f.status==='andamento'?'selected':''}>Em andamento</option>
+            <option value="concluido" ${f.status==='concluido'?'selected':''}>Concluído</option>
+          </select>
+          <button class="btn-save" onclick="savePDI('${f.id}')">💾 Salvar PDI</button>
+          <button class="btn-word" id="btn-word-${f.id}" onclick="exportarPDIWord('${f.id}')">📄 Word</button>
+          <button class="btn-pdf" onclick="switchTab('dossie');selecionarDossiePorId('${f.id}')">🖨️ Dossiê PDF</button>
+        </div>
+      </div>
+    </div>`;
+}
+
+async function gerarPDIcomIA(id) {
+  const f = fichas.find(x=>x.id===id);
+  if (!f) return;
+
+  const btn = document.getElementById('btn-gerar-pdi-'+id);
+  const loadEl = document.getElementById('pdi-ai-loading-'+id);
+  const textarea = document.getElementById('pdi-'+id);
+
+  btn.disabled = true;
+  loadEl.style.display = 'flex';
+
+  const compTexto = (f.competencias||[])
+    .map(c => `  - ${c.nome}: ${c.val}/5 (${NIVEL_LABELS[c.val-1]||'não avaliado'})`)
+    .join('\n');
+
+  const interesseLabel = {'sim-migrar':'Sim, tem interesse em migrar de área','sim-manter':'Sim, tem interesse em outra área mas prefere permanecer','nao':'Não, quer crescer na área atual'};
+  const disponLabel = {'horario-trabalho':'Durante o horário de trabalho','fora-horario':'Fora do horário de trabalho','ambos':'Ambos os horários'};
+
+  const prompt = `Você é um especialista em Gestão de Pessoas e Desenvolvimento Humano. Com base nas informações abaixo, elabore um PDI (Plano de Desenvolvimento Individual) completo, estruturado e personalizado para este colaborador.
+
+## DADOS DO COLABORADOR
+- Nome: ${f.nome}
+- Cargo: ${f.cargo}${f.cbo?' (CBO '+f.cbo+' — '+f.cboTitulo+')':''}
+- Departamento: ${f.depto||'—'}
+- Nível auto-avaliado: ${f.nivel||'não informado'}
+- Tempo de empresa: ${f.experiencia||'não informado'}
+- Formação: ${f.formacao||'não informado'}
+- Idiomas: ${f.idiomas||'não informado'}
+- Autonomia: ${f.autonomia||'não informado'}
+
+## ATRIBUIÇÕES
+- O que COMPETE ao cargo: ${f.atribuicoesCompete||'não informado'}
+- O que faz ALÉM do cargo: ${f.atribuicoesAlem||'não informado'}
+- O que ainda NÃO executa: ${f.atribuicoesNaoFaz||'não informado'}
+
+## AUTO-AVALIAÇÃO DE COMPETÊNCIAS (escala 1-5)
+${compTexto}
+
+## AUTODESENVOLVIMENTO
+- Pontos fortes: ${f.pontosFortes||'não informado'}
+- Áreas para desenvolvimento: ${f.areasDesenvolvimento||'não informado'}
+- Expectativa de carreira (2 anos): ${f.expectativaCarreira||'não informado'}
+- Interesse em outras áreas: ${interesseLabel[f.interesse]||'não informado'}
+- Disponibilidade para capacitação: ${disponLabel[f.disponibilidade]||'não informado'}
+
+---
+
+Elabore o PDI seguindo EXATAMENTE esta estrutura:
+
+**1. DIAGNÓSTICO DO COLABORADOR**
+Resumo analítico do perfil atual, destacando pontos fortes, lacunas identificadas e potencial observado.
+
+**2. OBJETIVOS DE DESENVOLVIMENTO (6 a 12 meses)**
+Liste 3 a 5 objetivos específicos, mensuráveis e alinhados às lacunas e expectativas do colaborador.
+
+**3. PLANO DE AÇÃO**
+Para cada objetivo, defina:
+- Ação concreta a ser realizada
+- Recurso / modalidade (curso, mentoria, job rotation, leitura, projeto prático, etc.)
+- Prazo sugerido
+- Indicador de conclusão
+
+**4. COMPETÊNCIAS PRIORITÁRIAS**
+Indique as 3 competências com maior necessidade de desenvolvimento, com justificativa baseada nas notas e nos dados da ficha.
+
+**5. RECOMENDAÇÕES PARA O RH**
+Orientações específicas para o gestor e o RH acompanharem o desenvolvimento deste colaborador, incluindo sugestões de enquadramento de nível se aplicável.
+
+Seja objetivo, prático e personalizado. Use linguagem profissional mas acessível.`;
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 2000,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+    const data = await res.json();
+    const pdiText = data.content.map(i=>i.text||'').join('').trim();
+    textarea.value = pdiText;
+    // Auto-update status to "andamento"
+    const stSel = document.getElementById('st-'+id);
+    if (stSel && stSel.value === 'novo') stSel.value = 'andamento';
+    loadEl.style.display = 'none';
+    btn.disabled = false;
+    toast('✨ PDI gerado com sucesso! Revise e salve.');
+  } catch(e) {
+    loadEl.style.display = 'none';
+    btn.disabled = false;
+    toast('Erro ao gerar PDI. Verifique sua conexão.');
+    console.error(e);
+  }
+}
+
+async function savePDI(id) {
+  const pdiEl = document.getElementById('pdi-'+id);
+  const stEl  = document.getElementById('st-'+id);
+  if (!pdiEl || !stEl) { toast('Erro: elementos não encontrados. Tente recarregar.'); return; }
+  const pdi    = pdiEl.value;
+  const status = stEl.value;
+  // Preserva metas já existentes na ficha
+  const fichaAtual = fichas.find(f=>f.id===id) || {};
+  const metas = fichaAtual.metas || [];
+  fichas = fichas.map(f => f.id===id ? {...f, pdi, status, metas} : f);
+  try {
+    if (backendOk() && getSheetsURL()) {
+      try {
+        await fetch(getSheetsURL(), {
+          method: 'POST', mode: 'no-cors',
+          headers: { 'Content-Type': 'text/plain' },
+          body: JSON.stringify({ action: 'atualizarFicha', id, campos: { pdi, status, metas: JSON.stringify(metas) } })
+        });
+      } catch(fetchErr) {
+        
+      }
+    }
+    // Sempre salva local como backup
+    _salvarLocal();
+    toast('💾 PDI salvo com sucesso!');
+    updateMetrics();
+    // Atualiza só os elementos de status na lista sem destruir o detail panel aberto
+    document.querySelectorAll('.ficha-card').forEach(card => {
+      if (card.getAttribute('onclick')?.includes(id)) {
+        const badge = card.querySelector('.badge');
+        const lmap = {novo:'Aguardando PDI', andamento:'Em andamento', concluido:'Concluído'};
+        const bmap = {novo:'b-new', andamento:'b-prog', concluido:'b-done'};
+        if (badge) {
+          badge.textContent = lmap[status]||status;
+          badge.className = 'badge '+(bmap[status]||'b-new');
+        }
+      }
+    });
+  } catch(e) {
+    console.error('savePDI error:', e);
+    toast('Erro ao salvar: ' + (e.message||'desconhecido'));
+  }
+}
+
+// ── AVALIAÇÃO 360° ──
+function renderAv360Selects() {
+  const sel = document.getElementById('sel-colab-360');
+  if (!sel) return;
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">Selecione o colaborador...</option>' +
+    fichas.map(f=>`<option value="${f.id}" ${f.id===cur?'selected':''}>${esc(f.nome)} — ${esc(f.cargo)}</option>`).join('');
+  if (cur) renderAv360();
+}
+
+function renderAv360() {
+  const id = (document.getElementById('sel-colab-360')||{value:''}).value;
+  const content = document.getElementById('av360-content');
+  if (!id || !content) return;
+  const f = fichas.find(x=>x.id===id);
+  if (!f) return;
+
+  const av = f.av360 || {};
+  const COMPS = (f.competencias||[]).map(c=>c.nome);
+  const LABELS = ['','Iniciante','Básico','Intermediário','Avançado','Expert'];
+
+  const starsGestor = COMPS.map((nome,ci)=>{
+    const val = (av.gestor||[])[ci]||0;
+    return `<div class="av360-comp-row">
+      <span class="av360-comp-name">${nome}</span>
+      <div class="av360-stars">${[1,2,3,4,5].map(n=>`<button class="av360-star ${val>=n?'on':''}" onclick="setAv360Star('${id}','gestor',${ci},${n})">${n}</button>`).join('')}</div>
+      <span class="av360-val" id="av360-g-${id}-${ci}">${val?LABELS[val]:'—'}</span>
+    </div>`;}).join('');
+
+  const starsPar = COMPS.map((nome,ci)=>{
+    const val = (av.par||[])[ci]||0;
+    return `<div class="av360-comp-row">
+      <span class="av360-comp-name">${nome}</span>
+      <div class="av360-stars">${[1,2,3,4,5].map(n=>`<button class="av360-star ${val>=n?'on':''}" onclick="setAv360Star('${id}','par',${ci},${n})">${n}</button>`).join('')}</div>
+      <span class="av360-val" id="av360-p-${id}-${ci}">${val?LABELS[val]:'—'}</span>
+    </div>`;}).join('');
+
+  // Gráfico comparativo antes×depois
+  const compareRows = COMPS.map((nome,ci)=>{
+    const antes = (f.competencias[ci]||{val:0}).val;
+    const depois = (av.gestor||[])[ci]||0;
+    const corAntes = '#9ca3af'; const corDepois = '#0d9f6e';
+    return `<div class="comp-compare">
+      <span class="cc-name">${nome}</span>
+      <div class="cc-bar-wrap">
+        <div class="cc-bar-row"><span class="cc-bar-lbl">Auto-aval.</span><div class="cc-track"><div class="cc-fill-antes" style="width:${antes*20}%"></div></div><span class="cc-score" style="color:${corAntes}">${antes}/5</span></div>
+        <div class="cc-bar-row"><span class="cc-bar-lbl">Gestor</span><div class="cc-track"><div class="cc-fill-depois" style="width:${depois*20}%"></div></div><span class="cc-score" style="color:${corDepois}">${depois||'—'}</span></div>
+      </div>
+    </div>`;}).join('');
+
+  content.innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem">
+      <div class="av360-section">
+        <div class="av360-title">👤 Avaliação do Gestor</div>
+        ${starsGestor}
+      </div>
+      <div class="av360-section">
+        <div class="av360-title">👥 Avaliação de Par / Colega</div>
+        ${starsPar}
+      </div>
+    </div>
+    <div class="av360-section">
+      <div class="av360-title">📊 Comparativo: Auto-avaliação × Gestor</div>
+      <div style="display:flex;gap:16px;margin-bottom:12px;font-size:12px">
+        <div style="display:flex;align-items:center;gap:6px"><div style="width:12px;height:4px;background:#9ca3af;border-radius:2px"></div>Auto-avaliação (mapeamento)</div>
+        <div style="display:flex;align-items:center;gap:6px"><div style="width:12px;height:4px;background:#0d9f6e;border-radius:2px"></div>Avaliação do Gestor</div>
+      </div>
+      ${compareRows}
+    </div>
+    <div class="av360-section">
+      <div class="av360-title">📝 Comentários qualitativos</div>
+      <div class="form-group" style="margin-bottom:0.75rem"><label style="font-size:12px">Pontos fortes observados pelo gestor</label>
+        <textarea id="av360-forte-${id}" style="width:100%;min-height:70px;padding:8px 10px;border:1.5px solid var(--gray-200);border-radius:6px;font-size:13px;font-family:inherit;resize:vertical">${esc(av.comentForte||'')}</textarea>
+      </div>
+      <div class="form-group"><label style="font-size:12px">Oportunidades de melhoria observadas</label>
+        <textarea id="av360-melhoria-${id}" style="width:100%;min-height:70px;padding:8px 10px;border:1.5px solid var(--gray-200);border-radius:6px;font-size:13px;font-family:inherit;resize:vertical">${esc(av.comentMelhoria||'')}</textarea>
+      </div>
+    </div>`;
+}
+
+function setAv360Star(fichaId, tipo, ci, val) {
+  fichas = fichas.map(f => {
+    if (f.id!==fichaId) return f;
+    const av = {...(f.av360||{})};
+    av[tipo] = [...(av[tipo]||Array((f.competencias||[]).length).fill(0))];
+    av[tipo][ci] = val;
+    return {...f, av360:av};
+  });
+  _salvarLocal();
+  const LABELS = ['','Iniciante','Básico','Intermediário','Avançado','Expert'];
+  const prefix = tipo==='gestor'?'g':'p';
+  const lbl = document.getElementById(`av360-${prefix}-${fichaId}-${ci}`);
+  if (lbl) lbl.textContent = LABELS[val]||'—';
+  document.querySelectorAll(`#av360-content .av360-stars`).forEach((stars,idx)=>{
+    if (idx===ci+(tipo==='par'?(fichas.find(f=>f.id===fichaId)?.competencias||[]).length:0)) {
+      stars.querySelectorAll('.av360-star').forEach((s,i)=>s.classList.toggle('on',i<val));
+    }
+  });
+  renderAv360();
+}
+
+async function salvarAv360() {
+  const id = (document.getElementById('sel-colab-360')||{value:''}).value;
+  if (!id) return;
+  const forte = (document.getElementById('av360-forte-'+id)||{value:''}).value;
+  const melhoria = (document.getElementById('av360-melhoria-'+id)||{value:''}).value;
+  fichas = fichas.map(f => {
+    if (f.id!==id) return f;
+    const av = {...(f.av360||{}), comentForte:forte, comentMelhoria:melhoria};
+    return {...f, av360:av};
+  });
+  _salvarLocal();
+  if (backendOk()) {
+    const f = fichas.find(x=>x.id===id);
+    await fetch(getSheetsURL(),{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain'},
+      body:JSON.stringify({action:'atualizarFicha',id,campos:{av360:JSON.stringify(f.av360)}})});
+  }
+  toast('✅ Avaliação 360° salva!');
+}
+
+// ── EMAIL ALERTAS 15 DIAS ──
+function enviarAlertaEmail() {
+  const vencendo = fichas.filter(f=>{
+    if (!f.prazoCtrl || f.status==='concluido') return false;
+    const diff = Math.round((new Date(f.prazoCtrl)-new Date())/86400000);
+    return diff >= 0 && diff <= 15;
+  });
+  if (!vencendo.length) { toast('Nenhum PDI vencendo nos próximos 15 dias.'); return; }
+
+  const linhas = vencendo.map(f=>{
+    const diff = Math.round((new Date(f.prazoCtrl)-new Date())/86400000);
+    return `• ${f.nome} (${f.cargo}) — Prazo: ${new Date(f.prazoCtrl).toLocaleDateString('pt-BR')} — ${diff===0?'HOJE':diff+'d restantes'}`;
+  }).join('\n');
+
+  const assunto = encodeURIComponent(`⚠️ Alerta PDI — ${vencendo.length} colaborador(es) com prazo próximo`);
+  const corpo = encodeURIComponent(
+    `Prezado(a) RH,\n\nOs seguintes colaboradores têm PDI vencendo nos próximos 15 dias:\n\n${linhas}\n\nAcesse o painel para tomar as ações necessárias.\n\nMapeamento de Cargos`
+  );
+  window.open(`mailto:?subject=${assunto}&body=${corpo}`);
+  toast(`📧 E-mail de alerta preparado para ${vencendo.length} colaborador(es)`);
+}
+
+// ── DOSSIÊ / PDF ──
+function renderDossieSelects() {
+  const sel = document.getElementById('sel-colab-dossie');
+  if (!sel) return;
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">Selecione o colaborador...</option>' +
+    fichas.map(f=>`<option value="${f.id}" ${f.id===cur?'selected':''}>${esc(f.nome)} — ${esc(f.cargo)}</option>`).join('');
+  if (cur) selecionarDossie();
+}
+
+function selecionarDossie() {
+  const id = (document.getElementById('sel-colab-dossie')||{value:''}).value;
+  const btn = document.getElementById('btn-gerar-dossie');
+  if (!id) { document.getElementById('dossie-preview').innerHTML='<div class="empty">Selecione um colaborador.</div>'; if(btn)btn.disabled=true; return; }
+  if (btn) btn.disabled = false;
+  const f = fichas.find(x=>x.id===id);
+  if (!f) return;
+  const LABELS = ['','Iniciante','Básico','Intermediário','Avançado','Expert'];
+  const metas = (f.metas||[]);
+  const av = f.av360||{};
+  const metasHtml = metas.length ? metas.map(m=>`
+    <tr><td style="padding:5px 8px;border:1px solid #e5e7eb">${m.meta||'—'}</td>
+        <td style="padding:5px 8px;border:1px solid #e5e7eb">${m.indicador||'—'}</td>
+        <td style="padding:5px 8px;border:1px solid #e5e7eb">${m.prazo?new Date(m.prazo).toLocaleDateString('pt-BR'):'—'}</td>
+        <td style="padding:5px 8px;border:1px solid #e5e7eb">${m.statusMeta==='concluida'?'✅ Concluída':m.statusMeta==='andamento'?'🔄 Em andamento':'⏳ Pendente'}</td>
+    </tr>`).join('') : '<tr><td colspan="4" style="padding:8px;text-align:center;color:#9ca3af">Nenhuma meta cadastrada</td></tr>';
+
+  document.getElementById('dossie-preview').innerHTML = `
+    <div style="background:#fff;border:1px solid var(--gray-200);border-radius:10px;padding:1.5rem;font-size:13px;line-height:1.7">
+      <div style="text-align:center;border-bottom:2px solid #1a56db;padding-bottom:1rem;margin-bottom:1.25rem">
+        <div style="font-size:20px;font-weight:700;color:#1a56db">DOSSIÊ DE DESENVOLVIMENTO — ${esc(f.nome).toUpperCase()}</div>
+        <div style="color:#6b7280">Mapeamento de Cargos · Gerado em ${new Date().toLocaleDateString('pt-BR')}</div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:1rem">
+        <div><strong>Cargo:</strong> ${esc(f.cargo)}</div><div><strong>CBO:</strong> ${f.cbo||'—'}</div>
+        <div><strong>Departamento:</strong> ${esc(f.depto)}</div><div><strong>Nível:</strong> ${f.nivel||'—'}</div>
+        <div><strong>Admissão:</strong> ${f.dataAdmissao||'—'}</div><div><strong>Status PDI:</strong> ${{novo:'Aguardando',andamento:'Em andamento',concluido:'Concluído'}[f.status]||'—'}</div>
+      </div>
+      <div style="font-weight:700;margin:1rem 0 0.5rem;color:#1a56db">📋 PDI — Resumo</div>
+      <div style="background:#f9fafb;border-radius:6px;padding:10px;font-size:12px;white-space:pre-wrap;max-height:150px;overflow:auto">${esc(f.pdi||'PDI não gerado')}</div>
+      <div style="font-weight:700;margin:1rem 0 0.5rem;color:#1a56db">🎯 Metas SMART</div>
+      <table style="width:100%;border-collapse:collapse;font-size:12px">
+        <thead><tr style="background:#1a56db;color:#fff">
+          <th style="padding:6px 8px;text-align:left">Meta</th><th style="padding:6px 8px">Indicador</th>
+          <th style="padding:6px 8px">Prazo</th><th style="padding:6px 8px">Status</th>
+        </tr></thead><tbody>${metasHtml}</tbody>
+      </table>
+      <div style="font-weight:700;margin:1rem 0 0.5rem;color:#1a56db">⭐ Competências</div>
+      ${(f.competencias||[]).map(c=>`<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px"><span style="width:160px;font-size:12px">${c.nome}</span><div style="flex:1;height:8px;background:#e5e7eb;border-radius:4px;overflow:hidden"><div style="width:${c.val*20}%;height:100%;background:#1a56db;border-radius:4px"></div></div><span style="font-size:11px;color:#6b7280;min-width:80px">${LABELS[c.val]||'—'}</span></div>`).join('')}
+      ${av.gestor ? `<div style="font-weight:700;margin:1rem 0 0.5rem;color:#1a56db">🔄 Avaliação 360° — Gestor</div>${(f.competencias||[]).map((c,i)=>`<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px"><span style="width:160px;font-size:12px">${c.nome}</span><div style="flex:1;height:8px;background:#e5e7eb;border-radius:4px;overflow:hidden"><div style="width:${(av.gestor[i]||0)*20}%;height:100%;background:#0d9f6e;border-radius:4px"></div></div><span style="font-size:11px;color:#6b7280;min-width:80px">${LABELS[av.gestor[i]]||'—'}</span></div>`).join('')}` : ''}
+      <div style="margin-top:2rem;display:grid;grid-template-columns:1fr 1fr;gap:2rem;border-top:1px solid #e5e7eb;padding-top:1.5rem">
+        <div><div style="font-size:12px;color:#9ca3af;margin-bottom:40px">Assinatura do Colaborador</div><div style="border-top:1.5px solid #374151"></div><div style="font-size:12px">${esc(f.nome)}</div></div>
+        <div><div style="font-size:12px;color:#9ca3af;margin-bottom:40px">Assinatura do RH</div><div style="border-top:1.5px solid #374151"></div><div style="font-size:12px">${esc(f.entrevistador||'Responsável RH')}</div></div>
+      </div>
+    </div>`;
+}
+
+function selecionarDossiePorId(id) {
+  const sel = document.getElementById('sel-colab-dossie');
+  if (sel) { sel.value = id; }
+  const btn = document.getElementById('btn-gerar-dossie');
+  if (btn) btn.disabled = false;
+  renderDossieSelects();
+  selecionarDossie();
+}
+
+async function gerarDossiePDF() {
+  const id = (document.getElementById('sel-colab-dossie')||{value:''}).value;
+  if (!id) { toast('Selecione um colaborador'); return; }
+  const btn = document.getElementById('btn-gerar-dossie');
+  if (btn) { btn.disabled=true; btn.textContent='⏳ Gerando...'; }
+  try {
+    const preview = document.getElementById('dossie-preview');
+    const f = fichas.find(x=>x.id===id);
+    const nomeArq = (f?.nome||'colaborador').replace(/\s+/g,'_');
+
+    // Gera HTML completo para impressão
+    const htmlContent = `<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8">
+      <title>Dossiê — ${f?.nome||''}</title>
+      <style>
+        *{box-sizing:border-box}
+        body{font-family:Arial,sans-serif;padding:24px;color:#111;font-size:13px;line-height:1.6;max-width:900px;margin:0 auto}
+        h1{font-size:20px;color:#1a56db;text-align:center;margin-bottom:4px}
+        .sub{text-align:center;color:#6b7280;font-size:12px;margin-bottom:20px}
+        .grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px}
+        .section-title{font-weight:700;color:#1a56db;margin:16px 0 8px;font-size:14px;border-bottom:1px solid #bfdbfe;padding-bottom:4px}
+        table{width:100%;border-collapse:collapse;font-size:12px;margin-bottom:12px}
+        th{background:#1a56db;color:#fff;padding:6px 8px;text-align:left}
+        td{padding:6px 8px;border:1px solid #e5e7eb}
+        .bar-row{display:flex;align-items:center;gap:8px;margin-bottom:5px}
+        .bar-name{width:160px;font-size:12px;flex-shrink:0}
+        .bar-track{flex:1;height:8px;background:#e5e7eb;border-radius:4px;overflow:hidden}
+        .bar-fill{height:100%;border-radius:4px}
+        .sig-row{display:grid;grid-template-columns:1fr 1fr;gap:40px;margin-top:48px;padding-top:24px;border-top:1px solid #e5e7eb}
+        .sig-box .line{border-top:1.5px solid #374151;margin-bottom:4px}
+        .sig-box .lbl{font-size:11px;color:#9ca3af;margin-bottom:40px}
+        .pdi-box{background:#f9fafb;border-radius:6px;padding:12px;font-size:12px;white-space:pre-wrap;border:1px solid #e5e7eb}
+        @media print{body{padding:0}@page{margin:1.5cm}button{display:none}}
+      </style></head><body>
+      ${preview.innerHTML}
+      <script>setTimeout(()=>window.print(),400)<\/script>
+      </body></html>`;
+
+    // Cria Blob e abre — funciona mesmo em ambientes com restrições
+    const blob = new Blob([htmlContent], {type:'text/html;charset=utf-8'});
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href     = url;
+    a.target   = '_blank';
+    a.download = `Dossie_PDI_${nomeArq}_${new Date().toLocaleDateString('pt-BR').replace(/\//g,'-')}.html`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(()=>URL.revokeObjectURL(url), 5000);
+    toast('✅ Dossiê gerado! Abra o arquivo e use Ctrl+P para imprimir em PDF.');
+  } catch(e) {
+    console.error('gerarDossiePDF error:', e);
+    toast('Erro ao gerar dossiê: '+e.message);
+  } finally {
+    if (btn) { btn.disabled=false; btn.textContent='🖨️ Gerar PDF'; }
+  }
+}
+
+function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function toast(msg) { const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),3000); }
+
+// ── TABS ──
+function switchTab(tab) {
+  ['fichas','controle','360','dossie'].forEach(t=>{
+    const btn = document.getElementById('tab-'+t);
+    const content = document.getElementById('tab-content-'+t);
+    if (btn) btn.classList.toggle('active', t===tab);
+    if (content) content.style.display = t===tab ? 'block' : 'none';
+  });
+  if (tab==='controle') renderControle();
+  if (tab==='360') renderAv360Selects();
+  if (tab==='dossie') renderDossieSelects();
+}
+
+// ── SMART METAS ──
+function renderSmartRows(f) {
+  const metas = f.metas || [];
+  if (!metas.length) return `<tr><td colspan="6" style="color:var(--gray-400);font-size:12px;text-align:center;padding:12px">Nenhuma meta cadastrada. Clique em "+ Nova meta SMART"</td></tr>`;
+  return metas.map((m,i)=>`
+    <tr>
+      <td><input class="smart-inp" value="${esc(m.meta||'')}" onblur="atualizarMeta('${f.id}',${i},'meta',this.value)" placeholder="Ex: Concluir curso de liderança"></td>
+      <td><input class="smart-inp" value="${esc(m.indicador||'')}" onblur="atualizarMeta('${f.id}',${i},'indicador',this.value)" placeholder="Ex: Certificado emitido"></td>
+      <td><input class="smart-inp" type="date" value="${m.prazo||''}" onchange="atualizarMeta('${f.id}',${i},'prazo',this.value)"></td>
+      <td><input class="smart-inp" value="${esc(m.responsavel||'')}" onblur="atualizarMeta('${f.id}',${i},'responsavel',this.value)" placeholder="Colaborador / RH"></td>
+      <td><select class="smart-inp" onchange="atualizarMeta('${f.id}',${i},'statusMeta',this.value)">
+        <option value="pendente" ${(m.statusMeta||'pendente')==='pendente'?'selected':''}>⏳ Pendente</option>
+        <option value="andamento" ${m.statusMeta==='andamento'?'selected':''}>🔄 Em andamento</option>
+        <option value="concluida" ${m.statusMeta==='concluida'?'selected':''}>✅ Concluída</option>
+      </select></td>
+      <td><button class="btn-del-meta" onclick="removerMeta('${f.id}',${i})" title="Remover">🗑</button></td>
+    </tr>`).join('');
+}
+
+function adicionarMeta(fichaId) {
+  fichas = fichas.map(f => {
+    if (f.id!==fichaId) return f;
+    const metas = [...(f.metas||[]), {meta:'',indicador:'',prazo:'',responsavel:'',statusMeta:'pendente'}];
+    return {...f, metas};
+  });
+  _salvarLocal();
+  const f = fichas.find(x=>x.id===fichaId);
+  const tbody = document.getElementById('smart-tbody-'+fichaId);
+  if (tbody && f) tbody.innerHTML = renderSmartRows(f);
+}
+
+function removerMeta(fichaId, idx) {
+  fichas = fichas.map(f => {
+    if (f.id!==fichaId) return f;
+    const metas = (f.metas||[]).filter((_,i)=>i!==idx);
+    return {...f, metas};
+  });
+  _salvarLocal();
+  const f = fichas.find(x=>x.id===fichaId);
+  const tbody = document.getElementById('smart-tbody-'+fichaId);
+  if (tbody && f) tbody.innerHTML = renderSmartRows(f);
+}
+
+function atualizarMeta(fichaId, idx, campo, valor) {
+  fichas = fichas.map(f => {
+    if (f.id!==fichaId) return f;
+    const metas = (f.metas||[]).map((m,i)=> i===idx ? {...m,[campo]:valor} : m);
+    return {...f, metas};
+  });
+  _salvarLocal();
+}
+
+function _salvarLocal() {
+  try {
+    localStorage.setItem('mapeamento_fichas', JSON.stringify(fichas));
+  } catch(e) {
+    if (e.name === 'QuotaExceededError' || e.code === 22) {
+      toast('⚠️ Armazenamento local cheio. Configure o Google Sheets para salvar remotamente.');
+    } else {
+      console.error('_salvarLocal error:', e);
+    }
+  }
+}
+
+// ── CONTROLE PDI TABLE com semáforo visual ──
+function renderControle() {
+  const search = (document.getElementById('ctrl-search')||{value:''}).value.toLowerCase();
+  const filter = (document.getElementById('ctrl-filter')||{value:''}).value;
+  const lista = fichas.filter(f=>{
+    const ms = f.nome.toLowerCase().includes(search)||f.cargo.toLowerCase().includes(search);
+    const mf = !filter || f.status===filter;
+    return ms && mf;
+  });
+  const tbody = document.getElementById('ctrl-tbody');
+  const empty = document.getElementById('ctrl-empty');
+  if (!lista.length) { tbody.innerHTML=''; empty.style.display='block'; return; }
+  empty.style.display='none';
+  const lmap={'novo':'Aguardando PDI','andamento':'Em andamento','concluido':'Concluído'};
+
+  tbody.innerHTML = lista.map(f=>{
+    const sem = getSemaforo(f.prazoCtrl);
+    const sinteseText = f.pdi ? f.pdi.substring(0,100).replace(/[#*]/g,'').trim()+'…' : '<span style="color:var(--gray-400)">—</span>';
+    const metasCount = (f.metas||[]).length;
+    const metasConcluidas = (f.metas||[]).filter(m=>m.statusMeta==='concluida').length;
+    const metasBadge = metasCount ? `<div style="font-size:11px;margin-top:3px;color:var(--gray-600)">${metasConcluidas}/${metasCount} metas</div>` : '';
+    return `<tr class="${f.status==='concluido'?'row-done':''}">
+      <td>
+        <div style="display:flex;align-items:center;gap:8px">
+          <div class="avatar" style="width:32px;height:32px;font-size:11px;flex-shrink:0">${initials(f.nome)}</div>
+          <div>
+            <div style="font-weight:600;font-size:13px">${esc(f.nome)}</div>
+            <div style="font-size:11px;color:var(--gray-400)">${f.data||'—'}</div>
+          </div>
+        </div>
+      </td>
+      <td><div style="font-weight:500">${esc(f.cargo)||'—'}</div>${f.cbo?`<div style="font-size:11px;color:var(--gray-400)">CBO ${f.cbo}</div>`:''}</td>
+      <td><div>${esc(f.depto)||'—'}</div>${f.nivel?`<div style="font-size:11px;color:var(--gray-400)">${f.nivel}</div>`:''}</td>
+      <td style="max-width:180px;font-size:12px">${sinteseText}${metasBadge}</td>
+      <td>
+        <input class="prazo-input" type="date" value="${f.prazoCtrl||''}"
+          onchange="salvarCampoCtrl('${f.id}','prazoCtrl',this.value)">
+        ${f.prazoCtrl ? `<div class="semaforo ${sem.cls}" style="margin-top:4px">${sem.icone} ${sem.label}</div>` : ''}
+      </td>
+      <td>
+        <select class="status-sel" style="font-size:12px;padding:5px 8px"
+          onchange="salvarCampoCtrl('${f.id}','status',this.value)">
+          <option value="novo" ${f.status==='novo'?'selected':''}>Aguardando PDI</option>
+          <option value="andamento" ${f.status==='andamento'?'selected':''}>Em andamento</option>
+          <option value="concluido" ${f.status==='concluido'?'selected':''}>Concluído</option>
+        </select>
+      </td>
+      <td><input class="obs-input" type="text" value="${esc(f.obsRH||'')}" placeholder="Observações..." onblur="salvarCampoCtrl('${f.id}','obsRH',this.value)"></td>
+      <td>
+        <div style="display:flex;flex-direction:column;gap:5px">
+          <button class="ctrl-edit-btn" onclick="irParaFicha('${f.id}')">📋 Ficha</button>
+          ${f.pdi?`<button class="ctrl-edit-btn" onclick="exportarPDIWord('${f.id}')">📄 Word</button>`:''}
+          <button class="ctrl-edit-btn" onclick="switchTab('dossie');selecionarDossiePorId('${f.id}')">🖨️ PDF</button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function getSemaforo(prazo) {
+  if (!prazo) return {cls:'', icone:'', label:''};
+  const diff = Math.round((new Date(prazo) - new Date()) / 86400000);
+  if (diff < 0) return {cls:'sem-vermelho', icone:'🔴', label:`Vencido há ${Math.abs(diff)}d`};
+  if (diff <= 15) return {cls:'sem-amarelo', icone:'🟡', label:`${diff}d restantes`};
+  return {cls:'sem-verde', icone:'🟢', label:new Date(prazo).toLocaleDateString('pt-BR')};
+}
+
+async function salvarCampoCtrl(id, campo, valor) {
+  fichas = fichas.map(f => f.id===id ? {...f, [campo]: valor} : f);
+  try {
+    if (backendOk() && getSheetsURL()) {
+      try {
+        await fetch(getSheetsURL(), {
+          method: 'POST', mode: 'no-cors',
+          headers: { 'Content-Type': 'text/plain' },
+          body: JSON.stringify({ action: 'atualizarFicha', id, campos: { [campo]: valor } })
+        });
+      } catch(fetchErr) {
+        
+      }
+    }
+    localStorage.setItem('mapeamento_fichas', JSON.stringify(fichas));
+    updateMetrics();
+    if (campo==='status') renderControle();
+    if (campo==='prazoCtrl') {
+      const sem = getSemaforo(valor);
+      document.querySelectorAll('#ctrl-tbody tr').forEach(row => {
+        if (row.innerHTML.includes(id)) {
+          const semEl = row.querySelector('.semaforo');
+          if (semEl && sem.cls) {
+            semEl.className = 'semaforo '+sem.cls;
+            semEl.textContent = sem.icone+' '+sem.label;
+          }
+        }
+      });
+    }
+  } catch(e) {
+    console.error('salvarCampoCtrl error:', e);
+    toast('Erro ao salvar: '+(e.message||'desconhecido'));
+  }
+}
+
+function irParaFicha(id) {
+  selectedId = id;
+  switchTab('fichas');
+  renderFichas();
+  setTimeout(()=>{ const el=document.getElementById('detail-area'); if(el) el.scrollIntoView({behavior:'smooth'}); }, 200);
+}
+
+// ── EXPORTAR PDI WORD (via Blob + docx CDN) ──
+async function exportarPDIWord(id) {
+  const f = fichas.find(x=>x.id===id);
+  if (!f || !f.pdi) { toast('Salve o PDI antes de exportar.'); return; }
+  const btn = document.getElementById('btn-word-'+id);
+  if (btn) { btn.disabled=true; btn.textContent='⏳ Gerando...'; }
+
+  try {
+    // Carrega docx via CDN
+    if (!window.docx) {
+      await new Promise((res,rej)=>{
+        const s=document.createElement('script');
+        s.src='https://cdn.jsdelivr.net/npm/docx@9.0.2/build/index.umd.js';
+        s.onload=res; s.onerror=rej; document.head.appendChild(s);
+      });
+    }
+    const { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell,
+            AlignmentType, HeadingLevel, BorderStyle, WidthType, ShadingType,
+            VerticalAlign, LevelFormat } = window.docx;
+
+    const azul = '1a56db'; const azulClaro = 'dbeafe'; const cinzaClaro = 'f3f4f6';
+    const border = { style: BorderStyle.SINGLE, size: 1, color: 'CCCCCC' };
+    const borders = { top:border, bottom:border, left:border, right:border };
+    const cellMargins = { top:80, bottom:80, left:120, right:120 };
+
+    function hdr(txt, size=28, color='1a56db') {
+      return new Paragraph({ children:[ new TextRun({ text:txt, bold:true, size, color, font:'Arial' }) ], spacing:{before:240,after:120} });
+    }
+    function p(txt, size=22, bold=false, color='374151') {
+      if (!txt) return new Paragraph({ children:[new TextRun('')] });
+      return new Paragraph({ children:[ new TextRun({ text:String(txt), size, bold, color, font:'Arial' }) ], spacing:{before:40,after:60} });
+    }
+    function sep() {
+      return new Paragraph({ border:{ bottom:{ style:BorderStyle.SINGLE, size:4, color:'e5e7eb', space:1 } }, spacing:{before:160,after:160}, children:[new TextRun('')] });
+    }
+    function infoRow(label, value) {
+      return new TableRow({ children:[
+        new TableCell({ borders, width:{size:2200,type:WidthType.DXA}, margins:cellMargins,
+          shading:{fill:azulClaro, type:ShadingType.CLEAR},
+          children:[new Paragraph({ children:[new TextRun({text:label, bold:true, size:20, color:'1e40af', font:'Arial'})] })] }),
+        new TableCell({ borders, width:{size:7160,type:WidthType.DXA}, margins:cellMargins,
+          children:[new Paragraph({ children:[new TextRun({text:String(value||'—'), size:20, color:'111827', font:'Arial'})] })] })
+      ]});
+    }
+    function compRow(comp, val) {
+      const pct = val*20; const label = NIVEL_LABELS[val-1]||'—';
+      const cor = pct>=80?'0d9f6e':pct>=60?'1a56db':pct>=40?'d97706':'9ca3af';
+      return new TableRow({ children:[
+        new TableCell({ borders, width:{size:2500,type:WidthType.DXA}, margins:cellMargins,
+          children:[new Paragraph({ children:[new TextRun({text:comp, size:20, font:'Arial'})] })] }),
+        new TableCell({ borders, width:{size:1000,type:WidthType.DXA}, margins:cellMargins,
+          children:[new Paragraph({ alignment:AlignmentType.CENTER, children:[new TextRun({text:`${val}/5`, bold:true, size:20, color:cor, font:'Arial'})] })] }),
+        new TableCell({ borders, width:{size:1500,type:WidthType.DXA}, margins:cellMargins,
+          children:[new Paragraph({ children:[new TextRun({text:label, size:20, color:cor, font:'Arial'})] })] }),
+        new TableCell({ borders, width:{size:4360,type:WidthType.DXA}, margins:cellMargins,
+          shading:{fill:pct>=80?'d1fae5':pct>=60?'dbeafe':pct>=40?'fef3c7':'f3f4f6', type:ShadingType.CLEAR},
+          children:[new Paragraph({ children:[new TextRun({text:'█'.repeat(Math.round(val/5*20)), size:16, color:cor, font:'Arial'})] })] })
+      ]});
+    }
+
+    const NIVEL_LABELS_LOCAL = ['Iniciante','Básico','Intermediário','Avançado','Expert'];
+    const interesseMap={'sim-migrar':'Sim — interesse em migrar de área','sim-manter':'Sim — prefere permanecer na área atual','nao':'Não — quer crescer na área atual'};
+    const disponMap={'horario-trabalho':'Horário de trabalho','fora-horario':'Fora do horário','ambos':'Ambos os horários'};
+
+    // Quebra PDI em parágrafos
+    const pdiLinhas = (f.pdi||'').split('\n').map(linha=>{
+      const l = linha.replace(/\*\*/g,'').replace(/^#{1,3}\s*/,'').trim();
+      if (!l) return new Paragraph({ children:[new TextRun('')], spacing:{before:40,after:40} });
+      const isTitulo = linha.startsWith('#') || linha.startsWith('**') && linha.endsWith('**');
+      return new Paragraph({
+        children:[new TextRun({ text:l, bold:isTitulo, size:isTitulo?24:22, color:isTitulo?azul:'374151', font:'Arial' })],
+        spacing:{before: isTitulo?160:40, after:isTitulo?80:40}
+      });
+    });
+
+    const doc = new Document({
+      styles: { default:{ document:{ run:{ font:'Arial', size:22 } } } },
+      numbering: { config:[
+        { reference:'bullets', levels:[{ level:0, format:LevelFormat.BULLET, text:'•', alignment:AlignmentType.LEFT,
+            style:{ paragraph:{ indent:{ left:720, hanging:360 } } } }] }
+      ]},
+      sections:[{ properties:{ page:{ size:{ width:11906, height:16838 }, margin:{ top:1134, right:1134, bottom:1134, left:1134 } } },
+        children:[
+          // CABEÇALHO
+          new Paragraph({ alignment:AlignmentType.CENTER, spacing:{before:0,after:80},
+            children:[new TextRun({text:'PLANO DE DESENVOLVIMENTO INDIVIDUAL — PDI', bold:true, size:36, color:azul, font:'Arial'})] }),
+          new Paragraph({ alignment:AlignmentType.CENTER, spacing:{before:0,after:240},
+            children:[new TextRun({text:'Mapeamento de Cargos', size:22, color:'6b7280', font:'Arial'})] }),
+          sep(),
+
+          // DADOS DO COLABORADOR
+          hdr('1. Identificação do Colaborador'),
+          new Table({ width:{size:9638,type:WidthType.DXA}, columnWidths:[2200,7160],
+            rows:[
+              infoRow('Nome completo', f.nome),
+              infoRow('Cargo / Função', f.cargo + (f.cbo?' — CBO '+f.cbo+' ('+f.cboTitulo+')':'')),
+              infoRow('Departamento', f.depto),
+              infoRow('Data de admissão', f.dataAdmissao),
+              infoRow('Formação', f.formacao),
+              infoRow('Experiência', f.experiencia),
+              infoRow('Nível (auto-aval.)', f.nivel),
+              infoRow('Idiomas', f.idiomas),
+              infoRow('Entrevistador RH', f.entrevistador),
+              infoRow('Data entrevista', f.dataEntrevista),
+            ]
+          }),
+          sep(),
+
+          // COMPETÊNCIAS
+          hdr('2. Auto-avaliação de Competências'),
+          p('Escala: 1 = Iniciante · 2 = Básico · 3 = Intermediário · 4 = Avançado · 5 = Expert', 18, false, '6b7280'),
+          new Paragraph({ spacing:{before:80,after:0}, children:[new TextRun('')] }),
+          new Table({ width:{size:9360,type:WidthType.DXA}, columnWidths:[2500,1000,1500,4360],
+            rows:[
+              new TableRow({ children:[
+                new TableCell({ borders, width:{size:2500,type:WidthType.DXA}, margins:cellMargins,
+                  shading:{fill:azul,type:ShadingType.CLEAR},
+                  children:[new Paragraph({ children:[new TextRun({text:'Competência',bold:true,size:20,color:'ffffff',font:'Arial'})] })] }),
+                new TableCell({ borders, width:{size:1000,type:WidthType.DXA}, margins:cellMargins,
+                  shading:{fill:azul,type:ShadingType.CLEAR},
+                  children:[new Paragraph({ alignment:AlignmentType.CENTER, children:[new TextRun({text:'Nota',bold:true,size:20,color:'ffffff',font:'Arial'})] })] }),
+                new TableCell({ borders, width:{size:1500,type:WidthType.DXA}, margins:cellMargins,
+                  shading:{fill:azul,type:ShadingType.CLEAR},
+                  children:[new Paragraph({ children:[new TextRun({text:'Nível',bold:true,size:20,color:'ffffff',font:'Arial'})] })] }),
+                new TableCell({ borders, width:{size:4360,type:WidthType.DXA}, margins:cellMargins,
+                  shading:{fill:azul,type:ShadingType.CLEAR},
+                  children:[new Paragraph({ children:[new TextRun({text:'Indicador visual',bold:true,size:20,color:'ffffff',font:'Arial'})] })] }),
+              ]}),
+              ...(f.competencias||[]).map(c=>compRow(c.nome, c.val))
+            ]
+          }),
+          sep(),
+
+          // AUTODESENVOLVIMENTO
+          hdr('3. Autodesenvolvimento'),
+          new Table({ width:{size:9638,type:WidthType.DXA}, columnWidths:[2200,7160],
+            rows:[
+              infoRow('Pontos fortes', f.pontosFortes),
+              infoRow('Áreas p/ desenvolv.', f.areasDesenvolvimento),
+              infoRow('Expectativa 2 anos', f.expectativaCarreira),
+              infoRow('Interesse outras áreas', interesseMap[f.interesse]||f.interesse||'—'),
+              infoRow('Disponib. capacitação', disponMap[f.disponibilidade]||f.disponibilidade||'—'),
+            ]
+          }),
+          sep(),
+
+          // PDI GERADO
+          hdr('4. Plano de Desenvolvimento Individual'),
+          ...pdiLinhas,
+          sep(),
+
+          // ASSINATURAS
+          hdr('5. Validação e Assinaturas'),
+          p('Este PDI foi elaborado em conjunto pelo colaborador e pelo RH, e representa o compromisso mútuo de desenvolvimento.', 20, false, '6b7280'),
+          new Paragraph({ spacing:{before:480,after:0}, children:[new TextRun('')] }),
+          new Table({ width:{size:9360,type:WidthType.DXA}, columnWidths:[4680,4680],
+            rows:[
+              new TableRow({ children:[
+                new TableCell({ borders:{ bottom:{style:BorderStyle.SINGLE,size:4,color:'111827'} }, width:{size:4680,type:WidthType.DXA}, margins:{top:0,bottom:80,left:0,right:120},
+                  children:[ new Paragraph({ children:[new TextRun('')], spacing:{before:720,after:0} }),
+                    new Paragraph({ children:[new TextRun({text:'Colaborador: '+f.nome, size:20, font:'Arial'})] }) ] }),
+                new TableCell({ borders:{ bottom:{style:BorderStyle.SINGLE,size:4,color:'111827'} }, width:{size:4680,type:WidthType.DXA}, margins:{top:0,bottom:80,left:120,right:0},
+                  children:[ new Paragraph({ children:[new TextRun('')], spacing:{before:720,after:0} }),
+                    new Paragraph({ children:[new TextRun({text:'Responsável RH: '+(f.entrevistador||'_______________'), size:20, font:'Arial'})] }) ] }),
+              ]}),
+              new TableRow({ children:[
+                new TableCell({ borders:{}, width:{size:4680,type:WidthType.DXA}, margins:{top:40,bottom:0,left:0,right:0},
+                  children:[new Paragraph({ children:[new TextRun({text:'Data: ___/___/______', size:18, color:'9ca3af', font:'Arial'})] })] }),
+                new TableCell({ borders:{}, width:{size:4680,type:WidthType.DXA}, margins:{top:40,bottom:0,left:120,right:0},
+                  children:[new Paragraph({ children:[new TextRun({text:'Data: ___/___/______', size:18, color:'9ca3af', font:'Arial'})] })] }),
+              ]}),
+            ]
+          }),
+          new Paragraph({ alignment:AlignmentType.CENTER, spacing:{before:400,after:0},
+            children:[new TextRun({text:'Documento gerado em '+new Date().toLocaleDateString('pt-BR')+' · Mapeamento de Cargos', size:18, color:'9ca3af', font:'Arial'})] }),
+        ]
+      }]
+    });
+
+    const blob = await Packer.toBlob(doc);
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `PDI_${f.nome.replace(/\s+/g,'_')}_${new Date().toLocaleDateString('pt-BR').replace(/\//g,'-')}.docx`;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    if (btn) { btn.disabled=false; btn.textContent='📄 Baixar Word'; }
+    toast('✅ PDI exportado com sucesso!');
+  } catch(e) {
+    if (btn) { btn.disabled=false; btn.textContent='📄 Baixar Word'; }
+    toast('Erro ao gerar Word: '+e.message);
+    console.error(e);
+  }
+}
+
+// ── EXPORTAR TABELA CONTROLE WORD ──
+async function exportarTabelaWord() {
+  if (!fichas.length) { toast('Nenhuma ficha para exportar.'); return; }
+  try {
+    if (!window.docx) {
+      await new Promise((res,rej)=>{
+        const s=document.createElement('script');
+        s.src='https://cdn.jsdelivr.net/npm/docx@9.0.2/build/index.umd.js';
+        s.onload=res; s.onerror=rej; document.head.appendChild(s);
+      });
+    }
+    const { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell,
+            AlignmentType, BorderStyle, WidthType, ShadingType } = window.docx;
+
+    const border = { style:BorderStyle.SINGLE, size:1, color:'CCCCCC' };
+    const borders = { top:border, bottom:border, left:border, right:border };
+    const cm = { top:80, bottom:80, left:100, right:100 };
+    const th = (txt) => new TableCell({ borders, margins:cm, shading:{fill:'1a56db',type:ShadingType.CLEAR},
+      children:[new Paragraph({ children:[new TextRun({text:txt,bold:true,size:18,color:'ffffff',font:'Arial'})] })] });
+    const td = (txt, color='374151') => new TableCell({ borders, margins:cm,
+      children:[new Paragraph({ children:[new TextRun({text:String(txt||'—'),size:18,color,font:'Arial'})] })] });
+    const lmap={'novo':'Aguardando PDI','andamento':'Em andamento','concluido':'Concluído'};
+    const corStatus={'novo':'1d4ed8','andamento':'92400e','concluido':'065f46'};
+
+    const doc = new Document({
+      styles:{default:{document:{run:{font:'Arial',size:18}}}},
+      sections:[{ properties:{page:{size:{width:16838,height:11906}, margin:{top:720,right:720,bottom:720,left:720}}},
+        children:[
+          new Paragraph({ alignment:AlignmentType.CENTER, spacing:{before:0,after:160},
+            children:[new TextRun({text:'CONTROLE DE PLANOS DE DESENVOLVIMENTO INDIVIDUAL — PDI', bold:true, size:28, color:'1a56db', font:'Arial'})] }),
+          new Paragraph({ alignment:AlignmentType.CENTER, spacing:{before:0,after:320},
+            children:[new TextRun({text:'Emitido em: '+new Date().toLocaleDateString('pt-BR')+'   ·   Total de colaboradores: '+fichas.length, size:18, color:'6b7280', font:'Arial'})] }),
+          new Table({
+            width:{size:15398,type:WidthType.DXA},
+            columnWidths:[2200,2200,1400,4000,1800,1800,2000],
+            rows:[
+              new TableRow({ children:[th('Colaborador'),th('Cargo / Função'),th('Depto'),th('Síntese do PDI'),th('Prazo'),th('Status'),th('Obs. RH')] }),
+              ...fichas.map(f=>{
+                const sintese = f.pdi ? f.pdi.replace(/[#*]/g,'').substring(0,180).trim()+'…' : '—';
+                return new TableRow({ children:[
+                  td(f.nome),
+                  td(f.cargo+(f.cbo?'\nCBO '+f.cbo:'')),
+                  td(f.depto),
+                  td(sintese),
+                  td(f.prazoCtrl ? new Date(f.prazoCtrl).toLocaleDateString('pt-BR') : '—'),
+                  new TableCell({ borders, margins:cm,
+                    shading:{fill:f.status==='concluido'?'d1fae5':f.status==='andamento'?'fef3c7':'dbeafe', type:ShadingType.CLEAR},
+                    children:[new Paragraph({ children:[new TextRun({text:lmap[f.status]||'—', bold:true, size:18, color:corStatus[f.status]||'374151', font:'Arial'})] })] }),
+                  td(f.obsRH||'—','6b7280'),
+                ]});
+              })
+            ]
+          })
+        ]
+      }]
+    });
+
+    const blob = await Packer.toBlob(doc);
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href=url; a.download=`Controle_PDI_${new Date().toLocaleDateString('pt-BR').replace(/\//g,'-')}.docx`;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast('✅ Tabela exportada com sucesso!');
+  } catch(e) { toast('Erro ao exportar Word: '+e.message); console.error(e); }
+}
+
+// ── EXPORTAR CSV ──
+function exportarCSV() {
+  if (!fichas.length) { toast('Nenhuma ficha para exportar.'); return; }
+  const lmap={'novo':'Aguardando PDI','andamento':'Em andamento','concluido':'Concluído'};
+  const interesseMap={'sim-migrar':'Interesse em migrar','sim-manter':'Interesse - prefere permanecer','nao':'Quer crescer na área atual'};
+  const disponMap={'horario-trabalho':'Horário de trabalho','fora-horario':'Fora do horário','ambos':'Ambos'};
+
+  const headers = [
+    'Nome','Cargo','CBO','Título CBO','Departamento','Nível','Admissão',
+    'Formação','Experiência','Idiomas','Autonomia','Entrevistador','Data Entrevista',
+    'Atribuições compete','Atividades além','Não executa',
+    'Comunicação','Trabalho em equipe','Proatividade','Organização',
+    'Resolução de problemas','Liderança','Conhecimento técnico','Adaptabilidade',
+    'Pontos fortes','Áreas p/ desenvolvimento','Expectativa carreira',
+    'Interesse outras áreas','Disponibilidade capacitação',
+    'Síntese PDI','Prazo PDI','Status','Obs. RH','Data envio'
+  ];
+
+  const rows = fichas.map(f => {
+    const comp = (f.competencias||[]);
+    const getComp = nome => { const c=comp.find(x=>x.nome===nome); return c?c.val+'/5 ('+(['','Iniciante','Básico','Intermediário','Avançado','Expert'][c.val]||'')+')':'—'; };
+    const sintese = f.pdi ? f.pdi.replace(/[#*\n\r]/g,' ').replace(/\s+/g,' ').substring(0,300).trim() : '';
+    return [
+      f.nome, f.cargo, f.cbo, f.cboTitulo, f.depto, f.nivel, f.dataAdmissao,
+      f.formacao, f.experiencia, f.idiomas, f.autonomia, f.entrevistador, f.dataEntrevista,
+      f.atribuicoesCompete, f.atribuicoesAlem, f.atribuicoesNaoFaz,
+      getComp('Comunicação'), getComp('Trabalho em equipe'), getComp('Proatividade'), getComp('Organização'),
+      getComp('Resolução de problemas'), getComp('Liderança'), getComp('Conhecimento técnico'), getComp('Adaptabilidade'),
+      f.pontosFortes, f.areasDesenvolvimento, f.expectativaCarreira,
+      interesseMap[f.interesse]||f.interesse||'',
+      disponMap[f.disponibilidade]||f.disponibilidade||'',
+      sintese,
+      f.prazoCtrl ? new Date(f.prazoCtrl).toLocaleDateString('pt-BR') : '',
+      lmap[f.status]||f.status||'',
+      f.obsRH||'',
+      f.data||''
+    ].map(v => '"'+String(v||'').replace(/"/g,'""')+'"');
+  });
+
+  const csvContent = '\uFEFF' + [headers.map(h=>'"'+h+'"'), ...rows].map(r=>r.join(';')).join('\r\n');
+  const blob = new Blob([csvContent], { type:'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href=url; a.download=`Controle_PDI_${new Date().toLocaleDateString('pt-BR').replace(/\//g,'-')}.csv`;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  toast('✅ CSV exportado! Abra no Excel.');
+}
+</script>
+</body>
+</html>
