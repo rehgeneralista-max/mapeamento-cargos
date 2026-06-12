@@ -701,7 +701,12 @@ const CBO_LOCAL = {
 };
 
 function buscarCBOLocal(cargo) {
-  const c = cargo.toUpperCase().trim().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+  // Normaliza: remove acentos, maiúsculas, espaços extras
+  const norm = s => s.toUpperCase().trim()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .replace(/\s+/g,' ');
+
+  const c = norm(cargo);
 
   const mapa = [
     // ADMINISTRATIVO
@@ -808,8 +813,8 @@ function buscarCBOLocal(cargo) {
   ];
 
   for (const [keywords, code] of mapa) {
-    const normalized = keywords.map(k=>k.normalize('NFD').replace(/[\u0300-\u036f]/g,''));
-    if (normalized.some(k => c.includes(k))) {
+    const normalized = keywords.map(k => norm(k));
+    if (normalized.some(k => c.includes(k) || k.includes(c.substring(0, Math.min(c.length, 12))))) {
       const entry = CBO_LOCAL[code];
       if (entry) return { code, ...entry };
     }
