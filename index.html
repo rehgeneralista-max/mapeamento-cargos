@@ -128,6 +128,13 @@
   .bar-row { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
   .bar-name { font-size: 13px; color: var(--gray-700); width: 160px; flex-shrink: 0; }
   .bar-track { flex: 1; height: 8px; background: var(--gray-200); border-radius: 4px; overflow: hidden; }
+  .pdi-secao { background:#f9fafb; border:1px solid var(--gray-200); border-left:4px solid var(--blue-600,#1a56db); border-radius:8px; padding:14px 16px; margin-bottom:12px; }
+  .pdi-secao-titulo { font-weight:700; font-size:13.5px; color:#1a56db; margin-bottom:8px; display:flex; align-items:center; gap:8px; }
+  .pdi-secao-num { display:inline-flex; align-items:center; justify-content:center; width:20px; height:20px; border-radius:50%; background:#1a56db; color:#fff; font-size:11px; flex-shrink:0; }
+  .pdi-secao-corpo { font-size:13px; line-height:1.7; color:#374151; }
+  .pdi-secao-corpo p { margin:0 0 8px; }
+  .pdi-secao-corpo ul { margin:0 0 8px; padding-left:18px; }
+  .pdi-secao-corpo li { margin-bottom:4px; }
   .bar-fill { height: 100%; border-radius: 4px; }
   .bar-score { font-size: 12px; color: var(--gray-600); min-width: 28px; text-align: right; }
 
@@ -788,7 +795,7 @@ function step1() {
     </div>` : '';
   return `
     <div class="card-title">Identificação do(a) Colaborador(a)</div>
-    <div class="alert alert-green">✅ Dados e CBO carregados · Atribuições pré-preenchidas na etapa seguinte</div>
+    ${form.cbo ? '<div class="alert alert-green">✅ Dados e CBO carregados · Atribuições pré-preenchidas na etapa seguinte</div>' : ''}
     <div class="form-group"><label>Nome completo <span class="req">*</span></label>
       <input type="text" id="f-nome" value="${esc(form.nome)}" placeholder="Seu nome completo">
     </div>
@@ -1378,6 +1385,7 @@ function renderDetail(id) {
     </div>`;}).join('');
   const interesseLabel={'sim-migrar':'Sim, interesse em migrar de área','sim-manter':'Sim, mas prefere permanecer','nao':'Não, quer crescer na área atual'};
   const disponLabel={'horario-trabalho':'Horário de trabalho','fora-horario':'Fora do horário','ambos':'Ambos'};
+  const av360Ok = !!(f.av360 && Array.isArray(f.av360.gestor) && f.av360.gestor.some(v=>v>0));
   area.innerHTML=`
     <div class="detail-panel">
       <div style="display:flex;align-items:center;gap:12px;margin-bottom:1.25rem">
@@ -1413,14 +1421,23 @@ function renderDetail(id) {
       <div class="pdi-area">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.75rem;flex-wrap:wrap;gap:8px">
           <h3 style="margin:0">📋 PDI — Plano de Desenvolvimento Individual</h3>
-          <button id="btn-gerar-pdi-${f.id}" class="btn-gerar-pdi" onclick="gerarPDIcomIA('${f.id}')">
+          ${av360Ok ? `<button id="btn-gerar-pdi-${f.id}" class="btn-gerar-pdi" onclick="gerarPDIcomIA('${f.id}')">
             ✨ Gerar PDI com IA
-          </button>
+          </button>` : ''}
         </div>
+        ${!av360Ok ? `
+        <div class="alert alert-amber" style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+          <span>🔒 O PDI só pode ser elaborado após a <strong>Avaliação 360°</strong> (gestor + colega) deste colaborador.</span>
+          <button class="btn-cbo" style="white-space:nowrap" onclick="irParaAv360('${f.id}')">Ir para Avaliação 360° →</button>
+        </div>` : `
         <div id="pdi-ai-loading-${f.id}" style="display:none;align-items:center;gap:10px;padding:12px;background:var(--blue-light);border-radius:var(--radius);margin-bottom:10px;font-size:13px;color:#1e40af">
-          <span class="spinner"></span> Analisando respostas e gerando PDI personalizado...
+          <span class="spinner"></span> Analisando ficha + Avaliação 360° e gerando PDI personalizado...
         </div>
-        <textarea id="pdi-${f.id}" style="width:100%;min-height:200px;padding:10px 12px;border:1.5px solid var(--gray-200);border-radius:var(--radius);font-size:13px;font-family:inherit;line-height:1.7;resize:vertical" placeholder="Clique em ✨ Gerar PDI com IA para criar automaticamente, ou escreva manualmente...">${esc(f.pdi||'')}</textarea>
+        ${f.pdi ? `<div class="pdi-formatado">${formatarPDI(f.pdi)}</div>
+        <details style="margin-top:10px"><summary style="cursor:pointer;font-size:12px;color:var(--gray-600)">✏️ Editar texto do PDI manualmente</summary>` : ''}
+        <textarea id="pdi-${f.id}" style="width:100%;min-height:260px;padding:10px 12px;border:1.5px solid var(--gray-200);border-radius:var(--radius);font-size:13px;font-family:inherit;line-height:1.7;resize:vertical;margin-top:8px" placeholder="Clique em ✨ Gerar PDI com IA para criar automaticamente, ou escreva manualmente...">${esc(f.pdi||'')}</textarea>
+        ${f.pdi ? `</details>` : ''}
+        `}
 
         <div style="margin-top:1.25rem;padding-top:1.25rem;border-top:1px solid var(--gray-200)">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
@@ -1448,13 +1465,57 @@ function renderDetail(id) {
             <option value="andamento" ${f.status==='andamento'?'selected':''}>Em andamento</option>
             <option value="concluido" ${f.status==='concluido'?'selected':''}>Concluído</option>
           </select>
-          <button class="btn-save" onclick="savePDI('${f.id}')">💾 Salvar PDI</button>
+          <button class="btn-save" onclick="savePDI('${f.id}')" ${!av360Ok?'disabled title="Complete a Avaliação 360° primeiro"':''}>💾 Salvar PDI</button>
           <button class="btn-word" id="btn-word-${f.id}" onclick="exportarPDIWord('${f.id}')">📄 Word</button>
           <button class="btn-pdf" onclick="baixarFichaRHPDF('${f.id}')">📄 Baixar ficha (PDF)</button>
           <button class="btn-pdf" onclick="switchTab('dossie');selecionarDossiePorId('${f.id}')">🖨️ Dossiê PDF</button>
         </div>
       </div>
     </div>`;
+}
+
+// Transforma o texto do PDI (markdown simples, com títulos **N. TÍTULO**)
+// em cartões organizados por etapa, em vez de bloco de texto corrido.
+function formatarPDI(texto) {
+  if (!texto) return '<div class="empty">PDI ainda não gerado.</div>';
+  const regex = /\*\*(\d+\.\s*[^*]+)\*\*/g;
+  const marks = [];
+  let m;
+  while ((m = regex.exec(texto))) marks.push({ idx: m.index, len: m[0].length, title: m[1].trim() });
+  if (!marks.length) {
+    return `<div class="pdi-secao"><div class="pdi-secao-corpo">${esc(texto).replace(/\n/g,'<br>')}</div></div>`;
+  }
+  let html = '';
+  for (let i = 0; i < marks.length; i++) {
+    const start = marks[i].idx + marks[i].len;
+    const end = i + 1 < marks.length ? marks[i+1].idx : texto.length;
+    const corpo = texto.slice(start, end).trim();
+    html += `<div class="pdi-secao">
+      <div class="pdi-secao-titulo"><span class="pdi-secao-num">${i+1}</span>${esc(marks[i].title.replace(/^\d+\.\s*/,''))}</div>
+      <div class="pdi-secao-corpo">${formatarCorpoPDI_(corpo)}</div>
+    </div>`;
+  }
+  return html;
+}
+function formatarCorpoPDI_(corpo) {
+  const linhas = corpo.split(/\n+/).map(l=>l.trim()).filter(Boolean);
+  let html = ''; let buffer = [];
+  const flush = () => { if (buffer.length) { html += `<ul>${buffer.join('')}</ul>`; buffer = []; } };
+  linhas.forEach(l => {
+    if (/^-\s?/.test(l)) buffer.push(`<li>${esc(l.replace(/^-\s?/,''))}</li>`);
+    else { flush(); html += `<p>${esc(l)}</p>`; }
+  });
+  flush();
+  return html;
+}
+
+// Leva o RH direto para a aba de Avaliação 360° já com o colaborador selecionado
+function irParaAv360(id) {
+  switchTab('360');
+  setTimeout(() => {
+    const sel = document.getElementById('sel-colab-360');
+    if (sel) { sel.value = id; renderAv360(); }
+  }, 0);
 }
 
 async function gerarPDIcomIA(id) {
@@ -1477,15 +1538,25 @@ async function gerarPDIcomIA(id) {
     // O prompt é montado no servidor (Apps Script) a partir da ficha já salva na planilha.
     const res = await fetch(getSheetsURL() + '?action=gerarPDI&id=' + encodeURIComponent(id), { cache: 'no-store' });
     const data = await res.json();
-    if (!data.ok) throw new Error(data.error || 'Falha ao consultar a IA');
+    if (!data.ok) {
+      if (String(data.error||'').includes('AVALIACAO_360_PENDENTE')) {
+        toast('🔒 Complete a Avaliação 360° antes de gerar o PDI.');
+        loadEl.style.display = 'none';
+        btn.disabled = false;
+        return;
+      }
+      throw new Error(data.error || 'Falha ao consultar a IA');
+    }
     const pdiText = data.texto;
     textarea.value = pdiText;
+    fichas = fichas.map(fx => fx.id===id ? {...fx, pdi: pdiText} : fx);
     // Auto-update status to "andamento"
     const stSel = document.getElementById('st-'+id);
     if (stSel && stSel.value === 'novo') stSel.value = 'andamento';
     loadEl.style.display = 'none';
     btn.disabled = false;
     toast('✨ PDI gerado com sucesso! Revise e salve.');
+    renderDetail(id);
   } catch(e) {
     loadEl.style.display = 'none';
     btn.disabled = false;
@@ -1656,6 +1727,7 @@ async function salvarAv360() {
       body:JSON.stringify({action:'atualizarFicha',id,campos:{av360:JSON.stringify(f.av360)}})});
   }
   toast('✅ Avaliação 360° salva!');
+  if (typeof selectedId !== 'undefined' && selectedId === id) renderDetail(id);
 }
 
 // ── EMAIL ALERTAS 15 DIAS ──
@@ -1719,7 +1791,7 @@ function selecionarDossie() {
         <div><strong>Admissão:</strong> ${f.dataAdmissao||'—'}</div><div><strong>Status PDI:</strong> ${{novo:'Aguardando',andamento:'Em andamento',concluido:'Concluído'}[f.status]||'—'}</div>
       </div>
       <div style="font-weight:700;margin:1rem 0 0.5rem;color:#1a56db">📋 PDI — Resumo</div>
-      <div style="background:#f9fafb;border-radius:6px;padding:10px;font-size:12px;white-space:pre-wrap;max-height:150px;overflow:auto">${esc(f.pdi||'PDI não gerado')}</div>
+      <div style="font-size:12px">${f.pdi ? formatarPDI(f.pdi) : '<div style="background:#f9fafb;border-radius:6px;padding:10px;color:#9ca3af">PDI não gerado</div>'}</div>
       <div style="font-weight:700;margin:1rem 0 0.5rem;color:#1a56db">🎯 Metas SMART</div>
       <table style="width:100%;border-collapse:collapse;font-size:12px">
         <thead><tr style="background:#1a56db;color:#fff">
